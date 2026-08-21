@@ -486,7 +486,7 @@ function condShort(c) {
 
 /** そのマスに入れるか（goalV を渡すと EXIT は単位一致でのみ通れる） */
 function canEnter(hand, cell, goalV) {
-  if (!cell || cell.t === 'wall') return { ok: false, why: 'ここは壁だ' };
+  if (!cell) return { ok: false, why: 'ここは盤面の外だ' };
   if (cell.t === 'gate') {
     return evalCond(hand, cell.cond)
       ? { ok: true }
@@ -520,24 +520,30 @@ function isItem(cell) { return !!cell && (cell.t === 'op' || cell.t === 'pow'); 
  */
 function buildStage(def) {
   var rows = def.grid;
-  var h = rows.length, w = 0;
-  for (var i = 0; i < h; i++) w = Math.max(w, rows[i].length);
+  var GH = rows.length, GW = 0;
+  for (var i = 0; i < GH; i++) GW = Math.max(GW, rows[i].length);
+  var w = (GW - 1) / 2, h = (GH - 1) / 2;      // 論理セルの数
+  var at = function (x, y) { return (rows[y] && rows[y][x]) || '#'; };
   var cells = [], start = null, goal = null;
-  for (var y = 0; y < h; y++) {
+  for (var cy = 0; cy < h; cy++) {
     var row = [];
-    for (var x = 0; x < w; x++) {
-      var ch = rows[y][x] || '#';
+    for (var cx = 0; cx < w; cx++) {
+      var ch = at(2 * cx + 1, 2 * cy + 1);
       var cell;
-      if (ch === '#') cell = { t: 'wall' };
-      else if (ch === '.') cell = { t: 'floor' };
-      else if (ch === 'S') { cell = { t: 'start' }; start = { x: x, y: y }; }
-      else if (ch === 'G') { cell = { t: 'goal' }; goal = { x: x, y: y }; }
+      if (ch === '.' || ch === '#') cell = { t: 'floor' };
+      else if (ch === 'S') { cell = { t: 'start' }; start = { x: cx, y: cy }; }
+      else if (ch === 'G') { cell = { t: 'goal' }; goal = { x: cx, y: cy }; }
       else {
         var proto = def.legend && def.legend[ch];
         if (!proto) throw new Error('legendに ' + ch + ' がない (' + def.id + ')');
         cell = JSON.parse(JSON.stringify(proto));
       }
-      cell.x = x; cell.y = y;
+      cell.x = cx; cell.y = cy;
+      cell.wall =
+        (at(2 * cx + 1, 2 * cy) === '#' ? WN : 0) |
+        (at(2 * cx + 2, 2 * cy + 1) === '#' ? WE : 0) |
+        (at(2 * cx + 1, 2 * cy + 2) === '#' ? WS : 0) |
+        (at(2 * cx, 2 * cy + 1) === '#' ? WW : 0);
       row.push(cell);
     }
     cells.push(row);
@@ -556,7 +562,21 @@ function cellAt(stage, x, y) {
   return stage.cells[y][x];
 }
 
-var DIRS = [{ dx: 0, dy: -1, n: '上' }, { dx: 0, dy: 1, n: '下' }, { dx: -1, dy: 0, n: '左' }, { dx: 1, dy: 0, n: '右' }];
+/* 壁のビット: 北=1 東=2 南=4 西=8 */
+var WN = 1, WE = 2, WS = 4, WW = 8;
+var DIRS = [
+  { dx: 0, dy: -1, n: '上', b: WN },
+  { dx: 0, dy: 1, n: '下', b: WS },
+  { dx: -1, dy: 0, n: '左', b: WW },
+  { dx: 1, dy: 0, n: '右', b: WE }
+];
+/** (x,y) から DIRS[i] の方向へ壁なしで進めるか */
+function canGo(stage, x, y, i) {
+  var c = cellAt(stage, x, y);
+  if (!c) return false;
+  if (c.wall & DIRS[i].b) return false;
+  return !!cellAt(stage, x + DIRS[i].dx, y + DIRS[i].dy);
+}
 
 /**
  * 後戻り禁止（一度通ったマスには入れない）のもとで、
@@ -590,11 +610,10 @@ function feasible(stage, state) {
       }
     } else if (c.t === 'pow') hasPow = true;
     for (var mm = 0; mm < DIRS.length; mm++) {
+      if (!canGo(stage, cx, cy, mm)) continue;
       var nx = cx + DIRS[mm].dx, ny = cy + DIRS[mm].dy;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       var ni = ny * w + nx;
       if (seen[ni] || vis[ni]) continue;
-      if (stage.cells[ny][nx].t === 'wall') continue;
       seen[ni] = 1; q[tail++] = ni;
     }
   }
@@ -638,11 +657,10 @@ function solve(stage, state, limit) {
         }
       } else if (c.t === 'pow') hasPow = true;
       for (var m = 0; m < DIRS.length; m++) {
+        if (!canGo(stage, cx, cy, m)) continue;
         var nx = cx + DIRS[m].dx, ny = cy + DIRS[m].dy;
-        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
         var ni = ny * w + nx;
         if (seen[ni] || vis[ni]) continue;
-        if (stage.cells[ny][nx].t === 'wall') continue;
         seen[ni] = 1; q[tail++] = ni;
       }
     }
@@ -667,12 +685,11 @@ function solve(stage, state, limit) {
     if (best && stack.length + 1 >= best.length) return;
     if (hopeless(x, y, hand)) return;
     for (var i = 0; i < DIRS.length; i++) {
+      if (!canGo(stage, x, y, i)) continue;
       var nx = x + DIRS[i].dx, ny = y + DIRS[i].dy;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       var ni = ny * w + nx;
       if (vis[ni]) continue;
       var cell = stage.cells[ny][nx];
-      if (cell.t === 'wall') continue;
       if (!canEnter(hand, cell, stage.goalV).ok) continue;
       vis[ni] = 1; stack.push(DIRS[i].n);
       dfs(nx, ny, applyCell(hand, cell));
@@ -690,7 +707,7 @@ if (typeof module !== 'undefined' && module.exports) {
     BASE: BASE, vnew: vnew, vmul: vmul, vpow: vpow, veq: veq, vzero: vzero, vdist: vdist,
     vkey: vkey, parseUnit: parseUnit, unitHTML: unitHTML, unitHTMLBase: unitHTMLBase, unitText: unitText,
     quantityName: quantityName, evalCond: evalCond, condLabel: condLabel, condShort: condShort,
-    canEnter: canEnter, applyCell: applyCell, isItem: isItem, vL1: vL1, vAllEven: vAllEven,
+    canEnter: canEnter, applyCell: applyCell, isItem: isItem, vL1: vL1, vAllEven: vAllEven, canGo: canGo,
     buildStage: buildStage, cellAt: cellAt, solve: solve, feasible: feasible, UNITS: UNITS, DIRS: DIRS
   };
 }
@@ -707,20 +724,20 @@ var STAGE_DEFS = [
 {
   id: "1-1", chapter: "第1章 力学の単位", title: "よけいなものを捨てる",
   story: "一度通った道は崩れて戻れない。まずは持っている m を捨てて EXIT へ。",
-  start: "m", goal: "1", par: 12,
+  start: "m", goal: "1", par: 5,
   grid: [
-    "#######",
-    "#S#..b#",
-    "#.#c#.#",
-    "#.#...#",
-    "#.#a#.#",
-    "#...#G#",
-    "#######"
+    "#########",
+    "#S.....a#",
+    "###.#.#.#",
+    "#b..#...#",
+    "#.###.#.#",
+    "#..c...G#",
+    "#########"
   ],
   legend: {
     a: {"t":"op","op":"/","u":"m"},
-    b: {"t":"op","op":"*","u":"m"},
-    c: {"t":"op","op":"*","u":"m"}
+    b: {"t":"op","op":"*","u":"s"},
+    c: {"t":"op","op":"*","u":"kg"}
   },
   tip: "÷m を踏むと m が1つ減る。m ÷ m = 1（無次元）。",
   formula: "m ÷ m = 1",
@@ -729,21 +746,23 @@ var STAGE_DEFS = [
 {
   id: "1-2", chapter: "第1章 力学の単位", title: "速さをつくる",
   story: "速さ = 距離 ÷ 時間。分かれ道はどれも一度きり。選ぶ前に考えよう。",
-  start: "m", goal: "m/s", par: 14,
+  start: "m", goal: "m/s", par: 7,
   grid: [
-    "#########",
-    "#S#db...#",
-    "#.#.###.#",
-    "#...#...#",
-    "#.#.#.#.#",
-    "#.c..a#G#",
-    "#########"
+    "###########",
+    "#S#.......#",
+    "#.#######.#",
+    "#...#.....#",
+    "###.#.###.#",
+    "#....a..#b#",
+    "#.#####.#.#",
+    "#c...d...G#",
+    "###########"
   ],
   legend: {
     a: {"t":"op","op":"/","u":"s"},
-    b: {"t":"op","op":"/","u":"kg"},
-    c: {"t":"op","op":"*","u":"kg"},
-    d: {"t":"op","op":"*","u":"kg"}
+    b: {"t":"op","op":"*","u":"s"},
+    c: {"t":"op","op":"*","u":"m"},
+    d: {"t":"op","op":"*","u":"m"}
   },
   tip: "「速さ」は m/s。距離を時間で割る、つまり ÷s。",
   formula: "v = x / t  →  m / s",
@@ -752,27 +771,29 @@ var STAGE_DEFS = [
 {
   id: "1-3", chapter: "第1章 力学の単位", title: "力をつくる",
   story: "F = ma。質量 kg から、力 N をつくれ。N = kg·m/s² だ。",
-  start: "kg", goal: "N", par: 14,
+  start: "kg", goal: "N", par: 11,
   grid: [
-    "###########",
-    "#S...a..#.#",
-    "###.###.#.#",
-    "#..d..eb..#",
-    "#.###.#.#c#",
-    "#.....#...#",
-    "#f#####.#.#",
-    "#h.g....#G#",
-    "###########"
+    "#############",
+    "#S..#f.....h#",
+    "###.#.###.###",
+    "#.#....a...b#",
+    "#.#.#.#####.#",
+    "#.....#e....#",
+    "#.#.###.###.#",
+    "#.#....g#c..#",
+    "#.###.###.###",
+    "#..d..#....G#",
+    "#############"
   ],
   legend: {
     a: {"t":"op","op":"*","u":"m"},
     b: {"t":"op","op":"/","u":"s"},
     c: {"t":"op","op":"/","u":"s"},
-    d: {"t":"op","op":"*","u":"kg"},
-    e: {"t":"op","op":"*","u":"m"},
-    f: {"t":"op","op":"*","u":"kg"},
-    g: {"t":"op","op":"*","u":"kg"},
-    h: {"t":"op","op":"/","u":"m"}
+    d: {"t":"op","op":"/","u":"m"},
+    e: {"t":"op","op":"/","u":"kg"},
+    f: {"t":"op","op":"*","u":"m"},
+    g: {"t":"op","op":"/","u":"kg"},
+    h: {"t":"op","op":"*","u":"m"}
   },
   tip: "N = kg·m/s²。kg に「×m」を1回、「÷s」を2回。",
   formula: "F = ma  →  N = kg · m/s²",
@@ -781,28 +802,30 @@ var STAGE_DEFS = [
 {
   id: "1-4", chapter: "第1章 力学の単位", title: "関門をひらく",
   story: "関門（🔒）は条件を満たす単位でないと通れない。速さ m/s から仕事 J をつくれ。",
-  start: "m/s", goal: "J", par: 18,
+  start: "m/s", goal: "J", par: 13,
   grid: [
-    "###########",
-    "#S........#",
-    "###h#.#a###",
-    "#.b.....ej#",
-    "#.###.###g#",
-    "#.#..d....#",
-    "#.#.###.#.#",
-    "#c..#.if.G#",
-    "###########"
+    "#############",
+    "#S......#i..#",
+    "#.#####.#.#.#",
+    "#..f#..c#.#.#",
+    "#.###.#.###.#",
+    "#....b#...#.#",
+    "#.###.#.#.#.#",
+    "#a.........h#",
+    "#.#####.###.#",
+    "#j.g.e.d...G#",
+    "#############"
   ],
   legend: {
     a: {"t":"op","op":"*","u":"kg"},
     b: {"t":"op","op":"*","u":"m"},
     c: {"t":"gate","cond":{"k":"has","d":"kg"}},
     d: {"t":"op","op":"/","u":"s"},
-    e: {"t":"op","op":"*","u":"s"},
+    e: {"t":"op","op":"/","u":"kg"},
     f: {"t":"op","op":"*","u":"m"},
-    g: {"t":"op","op":"/","u":"m"},
-    h: {"t":"op","op":"/","u":"m"},
-    i: {"t":"op","op":"*","u":"m"},
+    g: {"t":"op","op":"*","u":"m"},
+    h: {"t":"op","op":"/","u":"kg"},
+    i: {"t":"op","op":"/","u":"m"},
     j: {"t":"op","op":"*","u":"m"}
   },
   tip: "J = kg·m²/s²。関門の条件を満たす順番で拾おう。",
@@ -812,32 +835,34 @@ var STAGE_DEFS = [
 {
   id: "2-1", chapter: "第2章 相殺と関門", title: "相殺のコツ",
   story: "同じ単位を掛けて割れば、単位は消える（相殺）。J から仕事率 W へ。",
-  start: "J", goal: "W", par: 24,
+  start: "J", goal: "W", par: 14,
   grid: [
-    "###########",
-    "#S...g.k#f#",
-    "###.###.#.#",
-    "#....e#h..#",
-    "#a#i#####.#",
-    "#...#..d..#",
-    "#.#.#.#.#.#",
-    "#.b.......#",
-    "#.###.#j#.#",
-    "#....c..#G#",
-    "###########"
+    "#############",
+    "#S.....g....#",
+    "###.###.#.#.#",
+    "#k....#.....#",
+    "###.#.#.###.#",
+    "#a..#j..#..e#",
+    "#.#######.###",
+    "#....h.f..#i#",
+    "#.#.#.#####.#",
+    "#b#...#d....#",
+    "#.###.#.###.#",
+    "#....c..#..G#",
+    "#############"
   ],
   legend: {
     a: {"t":"op","op":"/","u":"kg"},
     b: {"t":"op","op":"*","u":"kg"},
-    c: {"t":"gate","cond":{"k":"has","d":"kg"}},
+    c: {"t":"gate","cond":{"k":"has","d":"m"}},
     d: {"t":"op","op":"/","u":"s"},
-    e: {"t":"op","op":"/","u":"m"},
+    e: {"t":"op","op":"*","u":"m"},
     f: {"t":"op","op":"*","u":"kg"},
-    g: {"t":"op","op":"*","u":"m"},
-    h: {"t":"op","op":"*","u":"kg"},
-    i: {"t":"op","op":"*","u":"m"},
-    j: {"t":"op","op":"*","u":"m"},
-    k: {"t":"op","op":"*","u":"m"}
+    g: {"t":"op","op":"*","u":"kg"},
+    h: {"t":"op","op":"/","u":"m"},
+    i: {"t":"op","op":"*","u":"s"},
+    j: {"t":"op","op":"/","u":"m"},
+    k: {"t":"op","op":"*","u":"kg"}
   },
   tip: "W = J/s。途中で kg を手放して関門をくぐり、あとで拾い直す。",
   formula: "P = W / t  →  W = J/s = kg·m²/s³",
@@ -846,17 +871,21 @@ var STAGE_DEFS = [
 {
   id: "2-2", chapter: "第2章 相殺と関門", title: "圧力の迷宮",
   story: "力 N から圧力 Pa をつくれ。Pa = N/m²。",
-  start: "N", goal: "Pa", par: 28,
+  start: "N", goal: "Pa", par: 15,
   grid: [
-    "#############",
-    "#Sh....df...#",
-    "#.#c#.#.#g#.#",
-    "#.....l.#.#.#",
-    "#.###.#.###i#",
-    "#.j.b.#.e.#.#",
-    "#.#.###.#.#.#",
-    "#a.....k...G#",
-    "#############"
+    "###############",
+    "#S#.#..l.f.c..#",
+    "#.#.#.#.#.#.#.#",
+    "#.#j.g#h....#.#",
+    "#.#.#.###.###.#",
+    "#.#.#....b...d#",
+    "#.###.#####.#.#",
+    "#..a..#...#...#",
+    "#########.###.#",
+    "#m..#.....#..e#",
+    "#.#.#.#.###.###",
+    "#i#...#..k...G#",
+    "###############"
   ],
   legend: {
     a: {"t":"op","op":"/","u":"m"},
@@ -864,13 +893,14 @@ var STAGE_DEFS = [
     c: {"t":"gate","cond":{"k":"zero","d":"m"}},
     d: {"t":"op","op":"/","u":"m"},
     e: {"t":"op","op":"/","u":"s"},
-    f: {"t":"op","op":"*","u":"kg"},
-    g: {"t":"op","op":"*","u":"s"},
-    h: {"t":"op","op":"*","u":"m"},
-    i: {"t":"op","op":"*","u":"s"},
-    j: {"t":"op","op":"*","u":"s"},
-    k: {"t":"op","op":"/","u":"kg"},
-    l: {"t":"op","op":"*","u":"kg"}
+    f: {"t":"op","op":"/","u":"kg"},
+    g: {"t":"op","op":"*","u":"kg"},
+    h: {"t":"op","op":"/","u":"kg"},
+    i: {"t":"op","op":"/","u":"kg"},
+    j: {"t":"op","op":"/","u":"kg"},
+    k: {"t":"op","op":"*","u":"s"},
+    l: {"t":"op","op":"/","u":"kg"},
+    m: {"t":"op","op":"*","u":"s"}
   },
   tip: "Pa = N/m²。÷m が2回。途中の ×s と ÷s は相殺する。",
   formula: "p = F / S  →  Pa = N/m² = kg/(m·s²)",
@@ -879,17 +909,21 @@ var STAGE_DEFS = [
 {
   id: "2-3", chapter: "第2章 相殺と関門", title: "無次元へ帰れ",
   story: "力 N から、すべての単位を消し去れ。球が消えたら勝ちだ。",
-  start: "N", goal: "1", par: 36,
+  start: "N", goal: "1", par: 13,
   grid: [
-    "#############",
-    "#S#......d..#",
-    "#.#####.#j#.#",
-    "#.#...c..e..#",
-    "#.#.###l#.###",
-    "#.g.b.#.#...#",
-    "#.#f#.#.#i#.#",
-    "#.a...k...hG#",
-    "#############"
+    "###############",
+    "#S.a.....b...c#",
+    "#.#.#########.#",
+    "#...#..l.k....#",
+    "###########.#.#",
+    "#.#.........#d#",
+    "#.#.#.###.###.#",
+    "#.#.#f..#.....#",
+    "#.#.###.###.###",
+    "#m.g#....h#e..#",
+    "#.###.###.###.#",
+    "#i.....j.....G#",
+    "###############"
   ],
   legend: {
     a: {"t":"op","op":"/","u":"kg"},
@@ -897,13 +931,14 @@ var STAGE_DEFS = [
     c: {"t":"gate","cond":{"k":"zero","d":"m"}},
     d: {"t":"op","op":"*","u":"s"},
     e: {"t":"op","op":"*","u":"s"},
-    f: {"t":"op","op":"*","u":"m"},
-    g: {"t":"op","op":"/","u":"s"},
-    h: {"t":"op","op":"*","u":"m"},
-    i: {"t":"op","op":"*","u":"kg"},
+    f: {"t":"op","op":"*","u":"s"},
+    g: {"t":"op","op":"*","u":"kg"},
+    h: {"t":"op","op":"*","u":"kg"},
+    i: {"t":"op","op":"*","u":"m"},
     j: {"t":"op","op":"*","u":"s"},
-    k: {"t":"op","op":"*","u":"kg"},
-    l: {"t":"op","op":"*","u":"m"}
+    k: {"t":"op","op":"/","u":"s"},
+    l: {"t":"op","op":"*","u":"s"},
+    m: {"t":"op","op":"*","u":"m"}
   },
   tip: "N = kg·m/s²。kg を1つ、m を1つ消し、s を2つ掛ければ無次元。",
   formula: "摩擦係数 μ = F / N → N/N = 1（無次元）",
@@ -912,34 +947,39 @@ var STAGE_DEFS = [
 {
   id: "2-4", chapter: "第2章 相殺と関門", title: "長い道のり",
   story: "質量 kg だけを持って出発。関門は2つ。エネルギー J にたどり着け。",
-  start: "kg", goal: "J", par: 40,
+  start: "kg", goal: "J", par: 17,
   grid: [
-    "#############",
-    "#S......g...#",
-    "###.#f#n#.#.#",
-    "#.a.#.#.o..h#",
-    "#.###.#####.#",
-    "#.#lk.e...#.#",
-    "#.#j#.#m#.#.#",
-    "#b...c...diG#",
-    "#############"
+    "###############",
+    "#S..#.........#",
+    "###.#.#.#.#.#.#",
+    "#a.....p......#",
+    "#.###.###.#.#.#",
+    "#.#.#n..#o..#.#",
+    "#.#.#.#####.#.#",
+    "#b#m#.#f.g...h#",
+    "#.#.#.#.#####.#",
+    "#c#..j#.#k.i#.#",
+    "#.#####.#.###.#",
+    "#..d...e#l...G#",
+    "###############"
   ],
   legend: {
     a: {"t":"op","op":"*","u":"m"},
     b: {"t":"op","op":"*","u":"s"},
-    c: {"t":"gate","cond":{"k":"has","d":"m"}},
+    c: {"t":"gate","cond":{"k":"has","d":"s"}},
     d: {"t":"op","op":"/","u":"s"},
     e: {"t":"op","op":"*","u":"m"},
     f: {"t":"gate","cond":{"k":"has","d":"m"}},
     g: {"t":"op","op":"/","u":"s"},
     h: {"t":"op","op":"/","u":"s"},
     i: {"t":"op","op":"*","u":"kg"},
-    j: {"t":"op","op":"/","u":"kg"},
+    j: {"t":"op","op":"*","u":"s"},
     k: {"t":"op","op":"/","u":"kg"},
     l: {"t":"op","op":"/","u":"m"},
-    m: {"t":"op","op":"/","u":"kg"},
+    m: {"t":"op","op":"*","u":"kg"},
     n: {"t":"op","op":"/","u":"kg"},
-    o: {"t":"op","op":"*","u":"s"}
+    o: {"t":"op","op":"*","u":"s"},
+    p: {"t":"op","op":"/","u":"kg"}
   },
   tip: "J = kg·m²/s²。×m が2回、÷s が2回。途中の ×s と ÷s は相殺する。",
   formula: "E = ½mv²  →  kg · (m/s)² = kg·m²/s²",
@@ -948,32 +988,35 @@ var STAGE_DEFS = [
 {
   id: "3-1", chapter: "第3章 電気・熱・累乗", title: "電気量をためる",
   story: "電流 A から電気量 C をつくれ。Q = It。",
-  start: "A", goal: "C", par: 32,
+  start: "A", goal: "C", par: 17,
   grid: [
-    "###########",
-    "#S...hg...#",
-    "#.#.#####j#",
-    "#.i.....d.#",
-    "###.#.#.#.#",
-    "#.#..a#.k.#",
-    "#.#.#.#.#.#",
-    "#.....#.e.#",
-    "#b#f#.#.#.#",
-    "#......c.G#",
-    "###########"
+    "###############",
+    "#S.......k....#",
+    "#.###.#######.#",
+    "#...#..h...i#.#",
+    "###.#.#.###.#.#",
+    "#j#.#......g..#",
+    "#.#.#####.###.#",
+    "#..a#c.....d#.#",
+    "#.#.#.#####.#.#",
+    "#.#...#l..#..e#",
+    "#.#.###.#.#.###",
+    "#b..#f.......G#",
+    "###############"
   ],
   legend: {
     a: {"t":"op","op":"*","u":"m"},
     b: {"t":"op","op":"*","u":"s"},
     c: {"t":"gate","cond":{"k":"has","d":"m"}},
     d: {"t":"op","op":"/","u":"m"},
-    e: {"t":"op","op":"/","u":"s"},
+    e: {"t":"op","op":"/","u":"A"},
     f: {"t":"op","op":"/","u":"A"},
-    g: {"t":"op","op":"/","u":"A"},
-    h: {"t":"op","op":"/","u":"A"},
-    i: {"t":"op","op":"*","u":"m"},
-    j: {"t":"op","op":"/","u":"A"},
-    k: {"t":"op","op":"/","u":"A"}
+    g: {"t":"op","op":"*","u":"kg"},
+    h: {"t":"op","op":"/","u":"s"},
+    i: {"t":"op","op":"/","u":"s"},
+    j: {"t":"op","op":"*","u":"kg"},
+    k: {"t":"op","op":"/","u":"A"},
+    l: {"t":"op","op":"/","u":"s"}
   },
   tip: "C = A·s。途中で拾う ×m と ÷m は相殺するので気にしなくてよい。",
   formula: "Q = It  →  C = A·s",
@@ -982,19 +1025,23 @@ var STAGE_DEFS = [
 {
   id: "3-2", chapter: "第3章 電気・熱・累乗", title: "電圧をつくる",
   story: "V = J/C。エネルギー J から電圧 V へ。C は A·s だ。",
-  start: "J", goal: "V", par: 26,
+  start: "J", goal: "V", par: 29,
   grid: [
-    "#############",
-    "#S..#k....gj#",
-    "###.#f#.#.#.#",
-    "#m#...#.....#",
-    "#.#.###d#.#e#",
-    "#...a.#.#.#.#",
-    "#.###.#.#.#.#",
-    "#.i.#....c#.#",
-    "#l###.#.#.#.#",
-    "#....b....hG#",
-    "#############"
+    "#################",
+    "#S#........h...o#",
+    "#.#######.#.#.#.#",
+    "#.#....a#j.g..#n#",
+    "#.#.###.#.#####.#",
+    "#...#.#...#..e#i#",
+    "###.#.#.#.#.#.#.#",
+    "#k#b....#.#...#.#",
+    "#.#.#####.#.#.#.#",
+    "#...#f...d..#.#.#",
+    "#.###.#.###.#.#.#",
+    "#..l......#.#...#",
+    "#.###.###.#.#.#.#",
+    "#..c.......m#..G#",
+    "#################"
   ],
   legend: {
     a: {"t":"op","op":"/","u":"A"},
@@ -1003,13 +1050,15 @@ var STAGE_DEFS = [
     d: {"t":"op","op":"/","u":"kg"},
     e: {"t":"op","op":"/","u":"s"},
     f: {"t":"op","op":"/","u":"m"},
-    g: {"t":"op","op":"*","u":"A"},
-    h: {"t":"op","op":"*","u":"s"},
-    i: {"t":"op","op":"*","u":"s"},
+    g: {"t":"op","op":"*","u":"s"},
+    h: {"t":"op","op":"*","u":"A"},
+    i: {"t":"op","op":"/","u":"m"},
     j: {"t":"op","op":"*","u":"A"},
-    k: {"t":"op","op":"*","u":"A"},
-    l: {"t":"op","op":"*","u":"A"},
-    m: {"t":"op","op":"*","u":"s"}
+    k: {"t":"op","op":"/","u":"m"},
+    l: {"t":"op","op":"/","u":"m"},
+    m: {"t":"op","op":"*","u":"m"},
+    n: {"t":"op","op":"*","u":"m"},
+    o: {"t":"op","op":"*","u":"m"}
   },
   tip: "V = J/C = J/(A·s)。÷A と ÷s。×kg と ÷kg は相殺する。",
   formula: "V = W / Q  →  V = J/C = kg·m²/(s³·A)",
@@ -1018,19 +1067,23 @@ var STAGE_DEFS = [
 {
   id: "3-3", chapter: "第3章 電気・熱・累乗", title: "比熱の谷",
   story: "比熱容量は「1 kg を1 K あげるのに必要なエネルギー」。J から J/(kg·K) へ。",
-  start: "J", goal: "J/kg/K", par: 26,
+  start: "J", goal: "J/kg/K", par: 17,
   grid: [
-    "#############",
-    "#S..#k....gj#",
-    "###.#f#.#.#.#",
-    "#m#...#.....#",
-    "#.#.###d#.#e#",
-    "#...a.#.#.#.#",
-    "#.###.#.#.#.#",
-    "#.i.#....c#.#",
-    "#l###.#.#.#.#",
-    "#....b....hG#",
-    "#############"
+    "#################",
+    "#S..#.......#...#",
+    "###.#.#.###.#.#.#",
+    "#.#.#j#...#o#i..#",
+    "#.#.###.#.#.###.#",
+    "#....a#b.c.....d#",
+    "#.###.#.#.#####.#",
+    "#n..#...#.#.#...#",
+    "###.###.#.#.#.###",
+    "#.........#..e..#",
+    "#.#########.#.#.#",
+    "#..l.k...h.m#.#.#",
+    "#.#########.#.#.#",
+    "#..g.f....#....G#",
+    "#################"
   ],
   legend: {
     a: {"t":"op","op":"/","u":"kg"},
@@ -1038,14 +1091,16 @@ var STAGE_DEFS = [
     c: {"t":"gate","cond":{"k":"zero","d":"kg"}},
     d: {"t":"op","op":"/","u":"m"},
     e: {"t":"op","op":"/","u":"K"},
-    f: {"t":"op","op":"*","u":"s"},
-    g: {"t":"op","op":"*","u":"K"},
+    f: {"t":"op","op":"/","u":"s"},
+    g: {"t":"op","op":"/","u":"s"},
     h: {"t":"op","op":"*","u":"kg"},
-    i: {"t":"op","op":"*","u":"kg"},
-    j: {"t":"op","op":"*","u":"K"},
-    k: {"t":"op","op":"*","u":"K"},
+    i: {"t":"op","op":"/","u":"s"},
+    j: {"t":"op","op":"*","u":"s"},
+    k: {"t":"op","op":"/","u":"s"},
     l: {"t":"op","op":"*","u":"K"},
-    m: {"t":"op","op":"*","u":"kg"}
+    m: {"t":"op","op":"*","u":"kg"},
+    n: {"t":"op","op":"*","u":"K"},
+    o: {"t":"op","op":"*","u":"kg"}
   },
   tip: "J/(kg·K) = m²/(s²·K)。÷kg と ÷K。×m と ÷m は相殺する。",
   formula: "Q = mcΔT  →  c = Q/(mΔT) = J/(kg·K)",
@@ -1054,32 +1109,38 @@ var STAGE_DEFS = [
 {
   id: "3-4", chapter: "第3章 電気・熱・累乗", title: "√の橋",
   story: "v = √(2gh)。√の橋は、すべての指数が偶数のときしか渡れない。",
-  start: "m/s^2", goal: "m/s", par: 30,
+  start: "m/s^2", goal: "m/s", par: 15,
   grid: [
-    "#############",
-    "#S..#..kg...#",
-    "#.#.###f#j#.#",
-    "#.....#.c...#",
-    "#.#.#.#.#.#.#",
-    "#a..#.#.#.d.#",
-    "#.###.#.#.###",
-    "#....b......#",
-    "#.#.#######.#",
-    "#......eih.G#",
-    "#############"
+    "#################",
+    "#S.......l#f.i..#",
+    "#.###.#####.###.#",
+    "#..h#.........#.#",
+    "###.#.###.###.#.#",
+    "#....b..#..a.g..#",
+    "#.###.#.###.#.#.#",
+    "#.....#.....#e..#",
+    "#.#.#######.#.#.#",
+    "#.#......k.d....#",
+    "#.#.#######.###.#",
+    "#..c........#...#",
+    "#.###.###.#.#.###",
+    "#....m#....j#..G#",
+    "#################"
   ],
   legend: {
     a: {"t":"op","op":"*","u":"s"},
     b: {"t":"op","op":"*","u":"m"},
     c: {"t":"op","op":"/","u":"s"},
     d: {"t":"pow","k":0.5},
-    e: {"t":"op","op":"*","u":"s"},
+    e: {"t":"op","op":"/","u":"m"},
     f: {"t":"op","op":"/","u":"m"},
-    g: {"t":"op","op":"*","u":"kg"},
+    g: {"t":"op","op":"/","u":"m"},
     h: {"t":"op","op":"*","u":"kg"},
-    i: {"t":"op","op":"*","u":"m"},
-    j: {"t":"op","op":"/","u":"m"},
-    k: {"t":"op","op":"*","u":"m"}
+    i: {"t":"op","op":"*","u":"s"},
+    j: {"t":"op","op":"*","u":"kg"},
+    k: {"t":"op","op":"/","u":"m"},
+    l: {"t":"op","op":"*","u":"s"},
+    m: {"t":"op","op":"/","u":"m"}
   },
   tip: "√ は指数を半分にする。渡る直前に m²/s²（全部偶数乗）にしておくこと。",
   formula: "v = √(2gh)  →  √(m/s² · m) = √(m²/s²) = m/s",
@@ -1088,19 +1149,23 @@ var STAGE_DEFS = [
 {
   id: "3-5", chapter: "第3章 電気・熱・累乗", title: "万有引力定数",
   story: "最終問題。F = GMm/r² より G = Fr²/(Mm)。力 N から G の単位をつくれ。",
-  start: "N", goal: "m^3/kg/s^2", par: 38,
+  start: "N", goal: "m^3/kg/s^2", par: 25,
   grid: [
-    "#############",
-    "#S..j.......#",
-    "#.#i#.#p#.#l#",
-    "#.k..f...g..#",
-    "#.#.#####.#o#",
-    "#.#e....#..n#",
-    "#a#####d#.#m#",
-    "#...b.#.#h#.#",
-    "#.#.#.#.#.#q#",
-    "#...#.c.#..G#",
-    "#############"
+    "#################",
+    "#S#..r..#.......#",
+    "#.#.#.###.#####.#",
+    "#.#.#...#i#..l#n#",
+    "#.#####.#.#.#.#.#",
+    "#....d#k...f..#p#",
+    "#.#.#.###.#.#.#.#",
+    "#.#.#..e....#..g#",
+    "#.#.###.#.###.#.#",
+    "#a#c#j#.#.#...#.#",
+    "#.#.#.#.#.#.###.#",
+    "#...#...#o.t#..h#",
+    "#.#.#.###.###.###",
+    "#b..#....m#q...G#",
+    "#################"
   ],
   legend: {
     a: {"t":"op","op":"*","u":"m"},
@@ -1111,15 +1176,17 @@ var STAGE_DEFS = [
     f: {"t":"gate","cond":{"k":"zero","d":"kg"}},
     g: {"t":"op","op":"*","u":"m"},
     h: {"t":"op","op":"/","u":"kg"},
-    i: {"t":"op","op":"*","u":"s"},
-    j: {"t":"op","op":"/","u":"m"},
+    i: {"t":"op","op":"/","u":"m"},
+    j: {"t":"op","op":"*","u":"kg"},
     k: {"t":"op","op":"/","u":"s"},
     l: {"t":"op","op":"/","u":"s"},
     m: {"t":"op","op":"*","u":"s"},
-    n: {"t":"op","op":"*","u":"s"},
-    o: {"t":"op","op":"*","u":"kg"},
-    p: {"t":"op","op":"*","u":"kg"},
-    q: {"t":"op","op":"*","u":"s"}
+    n: {"t":"op","op":"/","u":"m"},
+    o: {"t":"op","op":"/","u":"s"},
+    p: {"t":"op","op":"/","u":"s"},
+    q: {"t":"op","op":"*","u":"kg"},
+    r: {"t":"op","op":"*","u":"s"},
+    t: {"t":"op","op":"*","u":"kg"}
   },
   tip: "G の単位は N·m²/kg² = m³/(kg·s²)。×m を2回、÷kg を2回。",
   formula: "F = GMm/r²  →  G = N·m²/kg² = m³/(kg·s²)",
@@ -1139,16 +1206,17 @@ var R3 = (function () {
   'use strict';
 
   var cv, ctx, W = 0, H = 0, dpr = 1;
-  var WALLH = 0.70;
+  var WALLH = 0.50;
   var P = { sin: 0, cos: 0, C: { x: 0, y: 0, z: 0 }, scale: 1, ox: 0, oy: 0, rot: 0 };
   var quads = [];
   var fx = [];
 
   var COL = {
     sky1: '#7FCDF0', sky2: '#CDEEFF',
-    grass: '#3FA83F', grassEdge: '#7A5C3A',
-    wallTop: '#CE9455', wallS: '#A56B37', wallN: '#8A5730', wallE: '#966032', wallW: '#7E4E2A',
-    pit: '#4A3B2C', pitTop: '#5C4A38',
+    grass: '#6FBE73', grass2: '#67B46B', grassEdge: '#7A5C3A',
+    wallCap: '#E8C08A', wallS: '#C08A52', wallN: '#9A6A3C', wallE: '#B07C48', wallW: '#8F6034',
+    shadow: 'rgba(58,66,110,.30)',
+    pit: '#6A5B45', pitTop: '#7A6A52',
     gateLock: '#E04B4B', gateOpen: '#43A047',
     goal: '#17A398', goalTop: '#26C6BA',
     start: '#EFE2C0'
@@ -1222,30 +1290,82 @@ var R3 = (function () {
     var X = cellX(st, col, row), Z = cellZ(st, col, row);
     return { nw: pr(X - r, y, Z - r), ne: pr(X + r, y, Z - r), se: pr(X + r, y, Z + r), sw: pr(X - r, y, Z + r) };
   }
-  function box(st, col, row, y0, y1, cTop, cS, cN, cE, cW) {
-    var b = corners(st, col, row, y0, 0.5), t = corners(st, col, row, y1, 0.5);
+  /** 直方体（薄い壁パネルにも使う） */
+  function slab(x0, x1, z0, z1, y1) {
+    var b = {
+      nw: pr(x0, 0, z0), ne: pr(x1, 0, z0), se: pr(x1, 0, z1), sw: pr(x0, 0, z1)
+    }, t = {
+      nw: pr(x0, y1, z0), ne: pr(x1, y1, z0), se: pr(x1, y1, z1), sw: pr(x0, y1, z1)
+    };
     var faces = [
-      { p: [t.sw, t.se, b.se, b.sw], c: cS, d: (t.sw.d + t.se.d) / 2 },
-      { p: [t.ne, t.nw, b.nw, b.ne], c: cN, d: (t.ne.d + t.nw.d) / 2 },
-      { p: [t.se, t.ne, b.ne, b.se], c: cE, d: (t.se.d + t.ne.d) / 2 },
-      { p: [t.nw, t.sw, b.sw, b.nw], c: cW, d: (t.nw.d + t.sw.d) / 2 }
+      { p: [t.sw, t.se, b.se, b.sw], c: COL.wallS, d: (t.sw.d + t.se.d) / 2 },
+      { p: [t.ne, t.nw, b.nw, b.ne], c: COL.wallN, d: (t.ne.d + t.nw.d) / 2 },
+      { p: [t.se, t.ne, b.ne, b.se], c: COL.wallE, d: (t.se.d + t.ne.d) / 2 },
+      { p: [t.nw, t.sw, b.sw, b.nw], c: COL.wallW, d: (t.nw.d + t.sw.d) / 2 }
     ];
     faces.sort(function (a2, b2) { return b2.d - a2.d; });
     for (var i = 0; i < 4; i++) quad(faces[i].p[0], faces[i].p[1], faces[i].p[2], faces[i].p[3], faces[i].c);
-    quad(t.nw, t.ne, t.se, t.sw, cTop);
+    quad(t.nw, t.ne, t.se, t.sw, COL.wallCap);
+    // 上端の明るい縁
+    ctx.beginPath();
+    ctx.moveTo(t.nw.x, t.nw.y); ctx.lineTo(t.ne.x, t.ne.y); ctx.lineTo(t.se.x, t.se.y); ctx.lineTo(t.sw.x, t.sw.y);
+    ctx.closePath();
+    ctx.lineWidth = Math.max(0.8, t.nw.s * 0.035); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.stroke();
   }
+
+  /** セルの中心座標（範囲外でも計算できる＝外周の壁に使う） */
+  var WT = 0.105;                       // 壁の厚み（半分）
+  /** (x,y) と隣（dir）の境目に立つ薄い壁パネルの底面矩形 */
+  function edgeRect(st, x, y, i) {
+    var X1 = cellX(st, x, y), Z1 = cellZ(st, x, y);
+    var X2 = cellX(st, x + DIRS[i].dx, y + DIRS[i].dy), Z2 = cellZ(st, x + DIRS[i].dx, y + DIRS[i].dy);
+    var mx = (X1 + X2) / 2, mz = (Z1 + Z2) / 2;
+    if (Math.abs(X1 - X2) > 0.5) return { x0: mx - WT, x1: mx + WT, z0: mz - 0.5 - WT, z1: mz + 0.5 + WT };
+    return { x0: mx - 0.5 - WT, x1: mx + 0.5 + WT, z0: mz - WT, z1: mz + WT };
+  }
+
+  /** 壁が床に落とす影（すべてを1つのパスにまとめて1回で塗る＝重なっても濃くならない） */
+  function drawShadows(rects) {
+    var LX = 0.50, LZ = 0.78;                 // 左上からの光
+    ctx.save();
+    ctx.beginPath();
+    for (var i = 0; i < rects.length; i++) {
+      var r = rects[i], d = WALLH;
+      var pts = [
+        pr(r.x0, 0.012, r.z0), pr(r.x1, 0.012, r.z0), pr(r.x1, 0.012, r.z1), pr(r.x0, 0.012, r.z1),
+        pr(r.x0 + LX * d, 0.012, r.z0 + LZ * d), pr(r.x1 + LX * d, 0.012, r.z0 + LZ * d),
+        pr(r.x1 + LX * d, 0.012, r.z1 + LZ * d), pr(r.x0 + LX * d, 0.012, r.z1 + LZ * d)
+      ];
+      var hull = convexHull(pts);
+      ctx.moveTo(hull[0].x, hull[0].y);
+      for (var j = 1; j < hull.length; j++) ctx.lineTo(hull[j].x, hull[j].y);
+      ctx.closePath();
+    }
+    ctx.fillStyle = COL.shadow; ctx.fill();
+    ctx.restore();
+  }
+  function convexHull(ps) {
+    var p = ps.slice().sort(function (a, b) { return a.x - b.x || a.y - b.y; });
+    var cross = function (o, a, b) { return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); };
+    var lo = [], hi = [], i;
+    for (i = 0; i < p.length; i++) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p[i]) <= 0) lo.pop(); lo.push(p[i]); }
+    for (i = p.length - 1; i >= 0; i--) { while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], p[i]) <= 0) hi.pop(); hi.push(p[i]); }
+    lo.pop(); hi.pop();
+    return lo.concat(hi);
+  }
+
   function plate(st, col, row, color, inset, y) {
     var c = corners(st, col, row, y === undefined ? 0.02 : y, 0.5 - (inset === undefined ? 0.08 : inset));
     quad(c.nw, c.ne, c.se, c.sw, color);
   }
   /** 通った跡：地面が崩れて穴になる（もう戻れないことを見た目で伝える） */
   function pit(st, col, row) {
-    var top = corners(st, col, row, 0, 0.5), bot = corners(st, col, row, -0.34, 0.5);
+    var top = corners(st, col, row, 0, 0.5), bot = corners(st, col, row, -0.17, 0.5);
     quad(top.sw, top.se, bot.se, bot.sw, COL.pit);
-    quad(top.se, top.ne, bot.ne, bot.se, '#3E3125');
-    quad(top.nw, top.sw, bot.sw, bot.nw, '#3E3125');
-    quad(bot.nw, bot.ne, bot.se, bot.sw, '#2E241A');
-    ctx.save(); ctx.globalAlpha = .5; ctx.strokeStyle = '#8A6B4A'; ctx.lineWidth = 1.2;
+    quad(top.se, top.ne, bot.ne, bot.se, '#5B4E3C');
+    quad(top.nw, top.sw, bot.sw, bot.nw, '#5B4E3C');
+    quad(bot.nw, bot.ne, bot.se, bot.sw, '#4C4132');
+    ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = '#3E3527'; ctx.lineWidth = 1.1;
     ctx.beginPath(); ctx.moveTo(top.nw.x, top.nw.y); ctx.lineTo(top.ne.x, top.ne.y);
     ctx.lineTo(top.se.x, top.se.y); ctx.lineTo(top.sw.x, top.sw.y); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
@@ -1348,65 +1468,87 @@ var R3 = (function () {
     g.addColorStop(0, COL.sky1); g.addColorStop(1, COL.sky2);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
+    // 床（1枚の平面）と土台
     var gx = halfX(st), gz = halfZ(st);
     quad(pr(-gx, 0, -gz), pr(gx, 0, -gz), pr(gx, 0, gz), pr(-gx, 0, gz), COL.grass);
-    quad(pr(-gx, 0, gz), pr(gx, 0, gz), pr(gx, -0.55, gz), pr(-gx, -0.55, gz), COL.grassEdge);
+    quad(pr(-gx, 0, gz), pr(gx, 0, gz), pr(gx, -0.45, gz), pr(-gx, -0.45, gz), COL.grassEdge);
+    quad(pr(gx, 0, -gz), pr(gx, 0, gz), pr(gx, -0.45, gz), pr(gx, -0.45, -gz), shade(COL.grassEdge, -14));
+    ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,.055)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var gi = -gx + 1; gi < gx; gi++) { var a1 = pr(gi, 0.004, -gz), a2 = pr(gi, 0.004, gz); ctx.moveTo(a1.x, a1.y); ctx.lineTo(a2.x, a2.y); }
+    for (gi = -gz + 1; gi < gz; gi++) { var b1 = pr(-gx, 0.004, gi), b2 = pr(gx, 0.004, gi); ctx.moveTo(b1.x, b1.y); ctx.lineTo(b2.x, b2.y); }
+    ctx.stroke(); ctx.restore();
+
+    // 壁パネルを列挙 → まとめて影を落とす
+    var rows2 = [];
+    var allRects = [];
+    for (var y = 0; y < st.h; y++) {
+      var hN = [], vWE = [];
+      for (var x = 0; x < st.w; x++) {
+        var c = st.cells[y][x];
+        if (c.wall & 1) { var r1 = edgeRect(st, x, y, 0); hN.push(r1); allRects.push(r1); }
+        if (c.wall & 8) { var r2 = edgeRect(st, x, y, 2); vWE.push(r2); allRects.push(r2); }
+        if (x === st.w - 1 && (c.wall & 2)) { var r3 = edgeRect(st, x, y, 3); vWE.push(r3); allRects.push(r3); }
+      }
+      rows2.push({ hN: hN, vWE: vWE });
+    }
+    var southEnd = [];
+    for (x = 0; x < st.w; x++) {
+      if (st.cells[st.h - 1][x].wall & 4) { var r4 = edgeRect(st, x, st.h - 1, 1); southEnd.push(r4); allRects.push(r4); }
+    }
+    drawShadows(allRects);
 
     var ready = veq(S.hand, st.goalV);
 
-    for (var row = 0; row < st.h; row++) {
-      for (var col = 0; col < st.w; col++) {
-        var c = st.cells[row][col];
-        if (c.t === 'wall') continue;
-        var X = cellX(st, col, row), Z = cellZ(st, col, row);
-        quads.push({ col: col, row: row, p: [pr(X - .5, 0, Z - .5), pr(X + .5, 0, Z - .5), pr(X + .5, 0, Z + .5), pr(X - .5, 0, Z + .5)] });
-        var vI = S.visited[row * st.w + col];
-        if (vI && !(col === S.cx && row === S.cy)) { pit(st, col, row); continue; }
-        if (S.reach[row * st.w + col]) plate(st, col, row, 'rgba(255,246,170,.65)', 0.10);
-        if (c.t === 'start') plate(st, col, row, COL.start, 0.16);
-        if (c.t === 'goal') plate(st, col, row, ready ? '#5FE6D8' : COL.goalTop, 0.06);
+    for (y = 0; y < st.h; y++) {
+      // 床のしるし
+      for (x = 0; x < st.w; x++) {
+        var cc = st.cells[y][x];
+        var X = cellX(st, x, y), Z = cellZ(st, x, y);
+        quads.push({ col: x, row: y, p: [pr(X - .5, 0, Z - .5), pr(X + .5, 0, Z - .5), pr(X + .5, 0, Z + .5), pr(X - .5, 0, Z + .5)] });
+        var vI = S.visited[y * st.w + x];
+        if (vI && !(x === S.cx && y === S.cy)) { pit(st, x, y); continue; }
+        if (S.reach[y * st.w + x]) plate(st, x, y, 'rgba(255,246,170,.7)', 0.14);
+        if (cc.t === 'start') plate(st, x, y, COL.start, 0.2);
+        if (cc.t === 'goal') plate(st, x, y, ready ? '#5FE6D8' : COL.goalTop, 0.12);
       }
-      for (col = 0; col < st.w; col++) {
-        c = st.cells[row][col];
-        if (c.t === 'wall') { box(st, col, row, 0, WALLH, COL.wallTop, COL.wallS, COL.wallN, COL.wallE, COL.wallW); continue; }
-        if (S.visited[row * st.w + col]) continue;
-        var pX = cellX(st, col, row), pZ = cellZ(st, col, row);
-        if (c.t === 'gate') {
-          var openNS = walkable(st, col, row - 1) || walkable(st, col, row + 1);
-          var openEW = walkable(st, col - 1, row) || walkable(st, col + 1, row);
-          var ok = evalCond(S.hand, c.cond);
-          var cc = ok ? COL.gateOpen : COL.gateLock;
-          var th = 0.12, hh = 0.66;
-          var acrossX = P.rot ? !(openNS && !openEW) : (openNS && !openEW);
-          var a1 = acrossX ? [-.5, -th] : [-th, -.5], a2 = acrossX ? [.5, th] : [th, .5];
-          var x0 = pX + a1[0], z0 = pZ + a1[1], x1 = pX + a2[0], z1 = pZ + a2[1];
-          var tnw = pr(x0, hh, z0), tne = pr(x1, hh, z0), tse = pr(x1, hh, z1), tsw = pr(x0, hh, z1);
-          var bnw = pr(x0, 0, z0), bne = pr(x1, 0, z0), bse = pr(x1, 0, z1), bsw = pr(x0, 0, z1);
-          ctx.globalAlpha = ok ? 0.45 : 0.85;
-          quad(tsw, tse, bse, bsw, cc);
-          quad(tne, tnw, bnw, bne, shade(cc, -18));
-          quad(tnw, tne, tse, tsw, shade(cc, 22));
+      // 壁パネル（奥→手前）
+      for (var k = 0; k < rows2[y].hN.length; k++) { var q1 = rows2[y].hN[k]; slab(q1.x0, q1.x1, q1.z0, q1.z1, WALLH); }
+      for (k = 0; k < rows2[y].vWE.length; k++) { var q2 = rows2[y].vWE[k]; slab(q2.x0, q2.x1, q2.z0, q2.z1, WALLH); }
+      // セルの中身
+      for (x = 0; x < st.w; x++) {
+        cc = st.cells[y][x];
+        if (S.visited[y * st.w + x]) continue;
+        var pX = cellX(st, x, y), pZ = cellZ(st, x, y);
+        if (cc.t === 'gate') {
+          var ok = evalCond(S.hand, cc.cond);
+          var cg = ok ? COL.gateOpen : COL.gateLock;
+          ctx.globalAlpha = ok ? 0.32 : 0.6;
+          var gt = corners(st, x, y, 0.44, 0.34), gb = corners(st, x, y, 0, 0.34);
+          quad(gt.sw, gt.se, gb.se, gb.sw, cg);
+          quad(gt.se, gt.ne, gb.ne, gb.se, shade(cg, -18));
+          quad(gt.nw, gt.sw, gb.sw, gb.nw, shade(cg, -18));
+          quad(gt.nw, gt.ne, gt.se, gt.sw, shade(cg, 26));
           ctx.globalAlpha = 1;
-          labels.push({ k: 'chip', p: pr(pX, 1.05, pZ), t: (ok ? '🔓 ' : '🔒 ') + condShort(c.cond), bg: cc, fg: '#fff', sc: 0.3 });
-        } else if (c.t === 'op' || c.t === 'pow') {
-          // 道に落ちている単位も半透明の球
-          var hue = c.t === 'pow' ? HUE.pow : (c.op === '*' ? HUE.mul : HUE.div);
-          var iy = 0.42 + bob;
-          groundShadow(pr(pX, 0.02, pZ), 0.24, 0.18);
-          var sp = pr(pX, iy, pZ);
-          sphere(sp, 0.355, hue, 0.72);
-          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.72, h: sp.s * 0.72 });
-          bigText(sp.x, sp.y, tileLabel(c), Math.max(10, Math.min(24, sp.s * 0.34)), '#ffffff', 'rgba(40,20,55,.92)');
-        } else if (c.t === 'goal') {
-          labels.push({ k: 'chip', p: pr(pX, 1.24, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.32 });
-          labels.push({ k: 'text', p: pr(pX, 1.74, pZ), t: 'EXIT', sc: 0.42, fg: ready ? '#DFFFF6' : '#ffffff' });
+          labels.push({ k: 'chip', p: pr(pX, 0.92, pZ), t: (ok ? '🔓 ' : '🔒 ') + condShort(cc.cond), bg: cg, fg: '#fff', sc: 0.26 });
+        } else if (cc.t === 'op' || cc.t === 'pow') {
+          var hue = cc.t === 'pow' ? HUE.pow : (cc.op === '*' ? HUE.mul : HUE.div);
+          groundShadow(pr(pX, 0.02, pZ), 0.24, 0.16);
+          var sp = pr(pX, 0.40 + bob, pZ);
+          sphere(sp, 0.30, hue, 0.72);
+          bigText(sp.x, sp.y, tileLabel(cc), Math.max(10, Math.min(24, sp.s * 0.28)), '#ffffff', 'rgba(40,20,55,.92)');
+          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.62, h: sp.s * 0.62 });
+        } else if (cc.t === 'goal') {
+          labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.26 });
+          labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#DFFFF6' : '#ffffff' });
         }
       }
-      if (Math.round(S.py) === row) drawBall(st, S);
+      if (Math.round(S.py) === y) drawBall(st, S);
     }
+    for (k = 0; k < southEnd.length; k++) { var q3 = southEnd[k]; slab(q3.x0, q3.x1, q3.z0, q3.z1, WALLH); }
 
-    labels.sort(function (a, b) { return b.p.d - a.p.d; });
-    var placed = blockers.slice();   // 単位の球と重ならないように逃がす
+    labels.sort(function (a2, b2) { return b2.p.d - a2.p.d; });
+    var placed = blockers.slice();
     for (var li = 0; li < labels.length; li++) {
       var L = labels[li];
       var m = L.k === 'chip' ? measureChip(L.t, L.p.s, L.sc) : measureText(L.t, L.p.s, L.sc);
@@ -1453,7 +1595,6 @@ var R3 = (function () {
   }
   function outlineText(L, text, fill) { bigText(L.cx, L.cy, text, L.fs, fill, 'rgba(40,60,40,.9)'); }
 
-  function walkable(st, col, row) { var c = cellAt(st, col, row); return !!c && c.t !== 'wall'; }
   function shade(hex, amt) {
     var n = parseInt(hex.slice(1), 16);
     return 'rgb(' + Math.max(0, Math.min(255, (n >> 16) + amt)) + ',' +
@@ -1638,12 +1779,12 @@ var R3 = (function () {
   var rafId = null;
   function reachMap() {
     var st = G.stage, m = new Uint8Array(st.w * st.h);
-    [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(function (d) {
-      var nx = G.x + d[0], ny = G.y + d[1], c = cellAt(st, nx, ny);
-      if (!c || c.t === 'wall') return;
-      if (G.visited[ny * st.w + nx]) return;
-      if (canEnter(G.hand, c, st.goalV).ok) m[ny * st.w + nx] = 1;
-    });
+    for (var i = 0; i < DIRS.length; i++) {
+      if (!canGo(st, G.x, G.y, i)) continue;
+      var nx = G.x + DIRS[i].dx, ny = G.y + DIRS[i].dy;
+      if (G.visited[ny * st.w + nx]) continue;
+      if (canEnter(G.hand, cellAt(st, nx, ny), st.goalV).ok) m[ny * st.w + nx] = 1;
+    }
     return m;
   }
   function popScale() {
@@ -1727,8 +1868,10 @@ var R3 = (function () {
   function tryMove(dx, dy) {
     if (!G || G.done) return false;
     var st = G.stage, nx = G.x + dx, ny = G.y + dy;
+    var di = -1;
+    for (var i = 0; i < DIRS.length; i++) if (DIRS[i].dx === dx && DIRS[i].dy === dy) di = i;
+    if (di < 0 || !canGo(st, G.x, G.y, di)) { bump(dx, dy, nx, ny); return false; }
     var c = cellAt(st, nx, ny);
-    if (!c || c.t === 'wall') { bump(dx, dy, nx, ny); return false; }
     if (G.visited[ny * st.w + nx]) { bump(dx, dy, nx, ny); toast('一度通った道は崩れている。後戻りはできない。', ''); return false; }
     var ce = canEnter(G.hand, c, st.goalV);
     if (!ce.ok) { bump(dx, dy, nx, ny); toast(ce.why, ''); return false; }
