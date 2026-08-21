@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>単位迷宮 — Dimension Labyrinth</title>
+<meta name="description" content="物理の単位を掛けたり割ったりしながら3D迷路を抜ける、次元解析の学習ゲーム。">
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= タイトル ================= -->
+  <section id="screen-title">
+    <div class="sky-hero">
+      <div class="logo">単位迷宮</div>
+      <div class="logo-sub">DIMENSION LABYRINTH</div>
+      <p class="tagline">
+        ボールが持っているのは「物理の単位」。<br>
+        道に落ちた <b>×m</b> や <b>÷s</b> を拾いながら、<br>
+        EXIT が要求する単位に <b>ぴったり</b> 合わせて脱出せよ。
+      </p>
+    </div>
+    <div class="title-btns">
+      <button class="btn primary" id="btn-start">はじめる</button>
+      <button class="btn" id="btn-howto">あそびかた</button>
+    </div>
+    <div class="eqdemo">
+      kg → <span class="t" style="background:#7E57C2">×m</span> → kg·m →
+      <span class="t" style="background:#EC5B8A">÷s</span><span class="t" style="background:#EC5B8A">÷s</span>
+      → kg·m/s² = <span style="color:#17A398">N</span>
+      <small>F = ma。公式を覚えていなくても、単位を組み立てれば答えの形が見える。</small>
+    </div>
+  </section>
+
+  <!-- ================= ステージ選択 ================= -->
+  <section id="screen-select" class="hidden">
+    <div class="topbar">
+      <button class="icon-btn" id="btn-back">🏠</button>
+      <h2>ステージ選択</h2>
+      <button class="icon-btn" id="btn-howto2">？</button>
+    </div>
+    <div id="stagelist"></div>
+    <div class="setting-box">
+      <label class="switch"><input type="checkbox" id="maskmode">
+        <span>記憶モード<span class="sub">手持ちの単位をぼかす。頭の中で計算する練習になる</span></span></label>
+      <label class="switch" style="margin-top:10px"><input type="checkbox" id="mute"><span>効果音</span></label>
+    </div>
+  </section>
+
+  <!-- ================= ゲーム ================= -->
+  <section id="screen-game" class="hidden">
+    <div class="gamebar">
+      <button class="icon-btn" id="btn-tomenu">🏠</button>
+      <div class="level-pill" id="level-pill">Level 1-1</div>
+      <button class="icon-btn" id="btn-tip">💡</button>
+    </div>
+    <div class="story" id="stage-story"></div>
+
+    <div class="unitbar">
+      <div class="ucard now">
+        <div class="lbl">いま持っている単位</div>
+        <div class="val" id="u-now">-</div>
+        <div class="qname" id="u-now-q"></div>
+      </div>
+      <div class="arrowmid">→</div>
+      <div class="ucard goal">
+        <div class="lbl">EXIT が要求する単位</div>
+        <div class="val" id="u-goal">-</div>
+        <div class="qname" id="u-goal-q"></div>
+      </div>
+    </div>
+
+    <div class="stage3d" id="stage3d">
+      <canvas id="cv"></canvas>
+      <div class="overlay">
+        <div class="hud-steps">手数 <span id="steps">0</span> / 最短 <span id="par">-</span></div>
+        <div class="toast" id="msg"></div>
+        <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
+      </div>
+    </div>
+
+    <div class="distbar">
+      <div class="track"><div class="fill" id="dist-fill" style="width:0%"></div></div>
+      <div class="cap"><span>EXIT の単位との「次元距離」</span><span id="dist-num"></span></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn sm" id="btn-undo">↩ もどす</button>
+      <button class="btn sm" id="btn-reset">やり直し</button>
+      <button class="btn sm" id="btn-hint">💡 段階ヒント</button>
+    </div>
+
+    <div class="legendbox">
+      <b>ルール</b>　道に浮かぶ半透明の球が「単位」。
+      <span class="chip mul">×m</span>掛ける　<span class="chip div">÷s</span>割る　
+      <span class="chip pow">√</span>指数を半分に　
+      <span class="chip gate">🔒</span>関門（条件を満たす単位でないと通れない）<br>
+      <b>後戻りできない。</b> 通った道は崩れて穴になる。手持ちが増えると球が大きくなり、
+      同じ単位で割ると<b>相殺</b>して小さくなる。<br>
+      <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD　　<b>Z</b>=もどす　<b>R</b>=やり直し
+    </div>
+  </section>
+</div>
+
+<!-- ================= あそびかた ================= -->
+<div class="modal hidden" id="modal-howto">
+  <div class="box howto">
+    <h3>あそびかた</h3>
+    <p>このゲームでは、ボールは「数値」ではなく<b>単位そのもの</b>を持ち歩きます。</p>
+    <h4>1. ゴールは「単位を合わせる」こと</h4>
+    <p>EXIT には必要な単位が書いてあります。そこに<b>ぴったり同じ単位</b>で到達したときだけクリアです。単位が違うと、EXIT に立っても扉は開きません。</p>
+    <h4>2. 道に浮かぶ単位の球を拾う</h4>
+    <p><span class="chip mul">×kg</span><span class="chip div">÷s</span> の球を通ると、手持ちの単位にその演算が起きます。手持ちが増えるほど自分の球は<b>大きく</b>なり、同じ単位で割ると<b>相殺</b>して小さくなります。すべて消せば無次元です。</p>
+    <h4>3. 後戻りできない</h4>
+    <p>一度通った道は<b>崩れて穴になり</b>、二度と通れません。分かれ道でどちらを選ぶかが、そのまま「どの演算を使うか」の決定になります。行き止まりに入ったら「もどす」か「やり直し」で戻れます。</p>
+    <h4>4. 関門</h4>
+    <p><span class="chip gate">🔒</span> は、書かれた条件（例：<b>kg</b>＝kgを持っている、<b>¬m</b>＝mを含まない、<b>1</b>＝無次元）を満たす手持ちでないと通れません。「どの順番で拾うか」が問われます。</p>
+    <h4>5. 次元距離バー</h4>
+    <p>EXIT の単位と、いまの単位が<b>どれだけズレているか</b>を表します。減る方向に進んでいれば正しい方向です。</p>
+    <h4>なぜ単位で遊ぶのか</h4>
+    <p>物理では、式を忘れても<b>単位を組み立てれば答えの形が分かる</b>ことがあります（次元解析）。「速さを出したいなら m/s だから、距離を時間で割ればいい」——この感覚が身につくと、公式の丸暗記から抜け出せます。</p>
+    <div class="row"><button class="btn primary" id="howto-close">とじる</button></div>
+  </div>
+</div>
+
+<!-- ================= クリア ================= -->
+<div class="modal hidden" id="modal-clear"><div class="box" id="clear-body"></div></div>
+
+<script>
+/*__CORE__*/
+</script>
+<script>
+/*__STAGES__*/
+</script>
+<script>
+/*__RENDER__*/
+</script>
+<script>
+/*__UI__*/
+</script>
+</body>
+</html>
