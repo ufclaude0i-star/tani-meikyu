@@ -50,43 +50,51 @@ function makeMaze(C, R_, R, braid) {
   return g;
 }
 
-/* ---- 経路探索：最短の単純経路（チュートリアル用） ---- */
-function shortPath(g, s, t) {
+/* ---- セル間を移動できるか（間の壁を見る） ---- */
+function open_(g, cx, cy, dx, dy) {
   const H = g.length, W = g[0].length;
-  const prev = new Map(), q = [s]; prev.set(s[1] * W + s[0], null);
+  const wx = 2 * cx + 1 + dx, wy = 2 * cy + 1 + dy;
+  if (wx < 0 || wy < 0 || wx >= W || wy >= H) return false;
+  return g[wy][wx] !== '#';
+}
+const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+/* ---- 最短のセル経路（チュートリアル用） ---- */
+function shortPath(g, C, R_, s, t) {
+  const prev = new Map(), q = [s]; prev.set(s[1] * C + s[0], null);
   while (q.length) {
     const [x, y] = q.shift();
     if (x === t[0] && y === t[1]) break;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [dx, dy] of NB) {
       const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-      if (g[ny][nx] === '#' || prev.has(ny * W + nx)) continue;
-      prev.set(ny * W + nx, [x, y]); q.push([nx, ny]);
+      if (nx < 0 || ny < 0 || nx >= C || ny >= R_) continue;
+      if (!open_(g, x, y, dx, dy)) continue;
+      if (prev.has(ny * C + nx)) continue;
+      prev.set(ny * C + nx, [x, y]); q.push([nx, ny]);
     }
   }
-  if (!prev.has(t[1] * W + t[0])) return null;
+  if (!prev.has(t[1] * C + t[0])) return null;
   const out = []; let cur = t;
-  while (cur) { out.push(cur); cur = prev.get(cur[1] * W + cur[0]); }
+  while (cur) { out.push(cur); cur = prev.get(cur[1] * C + cur[0]); }
   return out.reverse();
 }
 
-/* ---- 経路探索：なるべく長い単純経路をランダムに探す ---- */
-function longPath(g, s, t, R, tries, minLen) {
-  const H = g.length, W = g[0].length;
+/* ---- なるべく長いセル経路をランダムに探す ---- */
+function longPath(g, C, R_, s, t, R, tries, minLen) {
   let best = null;
   for (let k = 0; k < tries; k++) {
-    const vis = Array.from({ length: H }, () => Array(W).fill(false));
+    const vis = Array.from({ length: R_ }, () => Array(C).fill(false));
     const p = [];
     let found = null, nodes = 0;
     (function dfs(x, y) {
       if (found || nodes++ > 40000) return;
       vis[y][x] = true; p.push([x, y]);
-      if (x === t[0] && y === t[1]) { found = p.slice(); }
+      if (x === t[0] && y === t[1]) found = p.slice();
       else {
-        for (const [dx, dy] of shuffle(R, [[1, 0], [-1, 0], [0, 1], [0, -1]])) {
+        for (const [dx, dy] of shuffle(R, NB.slice())) {
           const nx = x + dx, ny = y + dy;
-          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-          if (g[ny][nx] === '#' || vis[ny][nx]) continue;
+          if (nx < 0 || ny < 0 || nx >= C || ny >= R_) continue;
+          if (vis[ny][nx] || !open_(g, x, y, dx, dy)) continue;
           dfs(nx, ny);
           if (found) break;
         }
@@ -134,19 +142,19 @@ const LETTERS = 'abcdefghijklmnopqrtuvwxyzABCDEFHIJKLMNOPQRTUVWXYZ'.split(''); /
 /* ---- 1ステージ生成 ---- */
 function build(spec, seed) {
   const R = rng(seed);
-  const g = makeMaze(spec.C, spec.R, R, spec.braid).map(r => r.slice());
-  const W = g[0].length, H = g.length;
-  const s = [1, 1], t = [W - 2, H - 2];
-  const p = spec.short ? shortPath(g, s, t) : longPath(g, s, t, R, 60, spec.minLen || Math.floor((W + H) * 1.4));
+  const g = makeMaze(spec.C, spec.R, R, spec.braid).map(r => r.split ? r.split('') : r.slice());
+  const C = spec.C, R_ = spec.R;
+  const s = [0, 0], t = [C - 1, R_ - 1];
+  const p = spec.short ? shortPath(g, C, R_, s, t)
+                       : longPath(g, C, R_, s, t, R, 60, spec.minLen || Math.floor((C + R_) * 1.3));
   if (!p) return null;
 
   const startV = parseUnit(spec.start), goalV = parseUnit(spec.goal);
   const ops = spec.ops.slice();
   const nGates = spec.gates || 0;
   const inner = p.slice(1, p.length - 1);
-  if (inner.length < ops.length + nGates + 2) return null;
+  if (inner.length < ops.length + nGates + 1) return null;
 
-  // 正解ルート上に、単位マスと関門を順番に散らす
   const slots = [];
   const step = inner.length / (ops.length + nGates + 1);
   for (let i = 1; i <= ops.length + nGates; i++) slots.push(Math.min(inner.length - 1, Math.round(i * step)));
@@ -154,34 +162,31 @@ function build(spec, seed) {
   if (uniq.length < ops.length + nGates) return null;
 
   const gateAt = new Set();
-  // 関門は演算の途中（2つ目以降）に置くと「順番」が効く
   for (let i = 0; i < nGates; i++) gateAt.add(uniq[Math.min(uniq.length - 1, Math.floor((i + 1) * uniq.length / (nGates + 1)))]);
 
   const legend = {}, place = {};
   let li = 0, oi = 0, hand = vnew(startV);
-  const handAt = {};
   for (const idx of uniq) {
     const [x, y] = inner[idx];
+    const key = y * C + x;
     if (gateAt.has(idx)) {
       const cond = makeCond(hand, startV, R);
       if (!cond) return null;
-      const ch = LETTERS[li++]; legend[ch] = { t: 'gate', cond }; place[y * W + x] = ch;
+      const ch = LETTERS[li++]; legend[ch] = { t: 'gate', cond }; place[key] = ch;
     } else {
       if (oi >= ops.length) continue;
       const op = ops[oi++];
-      const ch = LETTERS[li++]; legend[ch] = opCell(op); place[y * W + x] = ch;
+      const ch = LETTERS[li++]; legend[ch] = opCell(op); place[key] = ch;
       hand = applyOp(hand, op);
     }
   }
   if (oi < ops.length) return null;
-  if (!veq(hand, goalV)) return null;   // 経路をたどると目標単位になるはず
+  if (!veq(hand, goalV)) return null;
 
-  // ダミー（正解ルート以外のマスに置く）
-  const onPath = new Set(p.map(([x, y]) => y * W + x));
+  const onPath = new Set(p.map(([x, y]) => y * C + x));
   const free = [];
-  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-    const i = y * W + x;
-    if (g[y][x] === '#' || onPath.has(i)) continue;
+  for (let y = 0; y < R_; y++) for (let x = 0; x < C; x++) {
+    if (onPath.has(y * C + x)) continue;
     free.push([x, y]);
   }
   shuffle(R, free);
@@ -191,29 +196,24 @@ function build(spec, seed) {
     const [x, y] = free[i];
     const ch = LETTERS[li++];
     legend[ch] = opCell(pick(R, pool));
-    place[y * W + x] = ch;
+    place[y * C + x] = ch;
   }
 
-  // 文字グリッドに落とす
-  const grid = [];
-  for (let y = 0; y < H; y++) {
-    let row = '';
-    for (let x = 0; x < W; x++) {
-      const i = y * W + x;
-      if (x === s[0] && y === s[1]) row += 'S';
-      else if (x === t[0] && y === t[1]) row += 'G';
-      else if (place[i]) row += place[i];
-      else row += g[y][x];
-    }
-    grid.push(row);
+  // 文字グリッドに落とす（壁は '#'、通路は '.'、セルには記号）
+  for (let y = 0; y < R_; y++) for (let x = 0; x < C; x++) {
+    const gx = 2 * x + 1, gy = 2 * y + 1;
+    if (x === s[0] && y === s[1]) g[gy][gx] = 'S';
+    else if (x === t[0] && y === t[1]) g[gy][gx] = 'G';
+    else if (place[y * C + x]) g[gy][gx] = place[y * C + x];
+    else g[gy][gx] = '.';
   }
+  const grid = g.map(r => r.join(''));
 
   const def = {
     id: spec.id, chapter: spec.chapter, title: spec.title, story: spec.story,
     start: spec.start, goal: spec.goal, grid, legend,
     tip: spec.tip, formula: spec.formula, quiz: spec.quiz
   };
-  // 検証
   let st;
   try { st = core.buildStage(def); } catch (e) { return null; }
   const sol = core.solve(st, { x: st.start.x, y: st.start.y, hand: st.startV, visited: null });
@@ -223,23 +223,17 @@ function build(spec, seed) {
   return def;
 }
 
-/** 迷路らしさのスコア：分岐点が多いほど「選択肢のある迷路」になる */
+/** 迷路らしさのスコア：分かれ道が多いほど「選択肢のある迷路」になる */
 function mazeScore(def) {
   const st = core.buildStage(def);
-  let junction = 0, dead = 0, walk = 0;
+  let junction = 0, dead = 0;
   for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) {
-    const c = st.cells[y][x];
-    if (c.t === 'wall') continue;
-    walk++;
     let deg = 0;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const n = core.cellAt(st, x + dx, y + dy);
-      if (n && n.t !== 'wall') deg++;
-    }
+    for (let i = 0; i < 4; i++) if (core.canGo(st, x, y, i)) deg++;
     if (deg >= 3) junction++;
     if (deg === 1) dead++;
   }
-  return { junction, dead, walk, score: junction * 3 + dead };
+  return { junction, dead, score: junction * 3 + dead };
 }
 
 /** 解けるシードを何通りも試し、いちばん迷路らしいものを採用する */

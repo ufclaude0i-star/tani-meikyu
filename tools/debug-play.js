@@ -65,8 +65,12 @@ function T(name, cond, detail) { (cond ? ok : issues).push(`${cond ? '✅' : '�
     const G = __DBG.state(), st = G.stage;
     const cv = document.getElementById('cv'), r = cv.getBoundingClientRect();
     // 隣接する通行可能マスを1つ選び、その画面座標を総当たりで探す
-    const targets = [[0,-1],[0,1],[-1,0],[1,0]].map(d => [G.x + d[0], G.y + d[1]])
-      .filter(([x, y]) => { const c = cellAt(st, x, y); return c && c.t !== 'wall' && !G.visited[y * st.w + x]; });
+    const targets = [];
+    for (let i = 0; i < DIRS.length; i++) {
+      if (!canGo(st, G.x, G.y, i)) continue;
+      const x = G.x + DIRS[i].dx, y = G.y + DIRS[i].dy;
+      if (!G.visited[y * st.w + x]) targets.push([x, y]);
+    }
     if (!targets.length) return { found: false };
     const [tx, ty] = targets[0];
     for (let sy = 0; sy < r.height; sy += 4) for (let sx = 0; sx < r.width; sx += 4) {
@@ -87,8 +91,10 @@ function T(name, cond, detail) { (cond ? ok : issues).push(`${cond ? '✅' : '�
     const G = __DBG.state(), st = G.stage;
     for (const sd of [[0,-1],[0,1],[-1,0],[1,0]]) {
       const g = R3.mapDir(sd[0], sd[1]);
+      let di = -1; for (let i = 0; i < DIRS.length; i++) if (DIRS[i].dx === g[0] && DIRS[i].dy === g[1]) di = i;
+      if (di < 0 || !canGo(st, G.x, G.y, di)) continue;
       const nx = G.x + g[0], ny = G.y + g[1], c = cellAt(st, nx, ny);
-      if (c && c.t !== 'wall' && !G.visited[ny*st.w+nx] && canEnter(G.hand, c, st.goalV).ok) return sd;
+      if (!G.visited[ny*st.w+nx] && canEnter(G.hand, c, st.goalV).ok) return sd;
     }
     return null;
   });
@@ -108,8 +114,8 @@ function T(name, cond, detail) { (cond ? ok : issues).push(`${cond ? '✅' : '�
     const G = __DBG.state(), st = G.stage;
     for (const sd of [[0,-1],[0,1],[-1,0],[1,0]]) {
       const g = R3.mapDir(sd[0], sd[1]);
-      const c = cellAt(st, G.x + g[0], G.y + g[1]);
-      const blocked = !c || c.t === 'wall' || G.visited[(G.y+g[1])*st.w + (G.x+g[0])];
+      let di = -1; for (let i = 0; i < DIRS.length; i++) if (DIRS[i].dx === g[0] && DIRS[i].dy === g[1]) di = i;
+      const blocked = di < 0 || !canGo(st, G.x, G.y, di) || G.visited[(G.y+g[1])*st.w + (G.x+g[0])];
       if (blocked) { __DBG.move(g[0], g[1]); return { tried: true, bump: !!G.bump, fx: R3.hasFX() }; }
     }
     return { tried: false };
@@ -135,9 +141,11 @@ function T(name, cond, detail) { (cond ? ok : issues).push(`${cond ? '✅' : '�
   /* ---- 壁への移動 ---- */
   const wallTest = await p.evaluate(() => {
     const G = __DBG.state(), st = G.stage;
-    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
-      const c = cellAt(st, G.x + dx, G.y + dy);
-      if (c && c.t === 'wall') { const before = [G.x, G.y]; const r = __DBG.move(dx, dy); return { tried: true, moved: r, same: G.x === before[0] && G.y === before[1] }; }
+    for (let i = 0; i < DIRS.length; i++) {
+      if (canGo(st, G.x, G.y, i)) continue;
+      const before = [G.x, G.y];
+      const r = __DBG.move(DIRS[i].dx, DIRS[i].dy);
+      return { tried: true, moved: r, same: G.x === before[0] && G.y === before[1] };
     }
     return { tried: false };
   });
@@ -218,10 +226,13 @@ function T(name, cond, detail) { (cond ? ok : issues).push(`${cond ? '✅' : '�
     // 詰みになるまで適当に歩いてみる（最大60手）
     const G = __DBG.state(), st = G.stage;
     for (let i = 0; i < 60; i++) {
-      const opts = [[0,-1],[0,1],[-1,0],[1,0]].filter(([dx,dy]) => {
+      const opts = [];
+      for (let k = 0; k < DIRS.length; k++) {
+        if (!canGo(st, G.x, G.y, k)) continue;
+        const dx = DIRS[k].dx, dy = DIRS[k].dy;
         const c = cellAt(st, G.x + dx, G.y + dy);
-        return c && c.t !== 'wall' && !G.visited[(G.y+dy)*st.w + (G.x+dx)] && canEnter(G.hand, c, st.goalV).ok;
-      });
+        if (!G.visited[(G.y+dy)*st.w + (G.x+dx)] && canEnter(G.hand, c, st.goalV).ok) opts.push([dx, dy]);
+      }
       if (!opts.length) return { dead: true, i };
       if (!feasible(st, { x: G.x, y: G.y, hand: G.hand, visited: G.visited })) return { doomed: true, i };
       const d = opts[i % opts.length];

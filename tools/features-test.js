@@ -22,21 +22,17 @@ const D = { '上': [0, -1], '下': [0, 1], '左': [-1, 0], '右': [1, 0] };
       let walk = 0, junction = 0, dead = 0, items = 0, gates = 0;
       for (let y = 0; y < S.h; y++) for (let x = 0; x < S.w; x++) {
         const c = S.cells[y][x];
-        if (c.t === 'wall') continue;
         walk++;
         if (c.t === 'op' || c.t === 'pow') items++;
         if (c.t === 'gate') gates++;
         let deg = 0;
-        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-          const n = cellAt(S, x + dx, y + dy);
-          if (n && n.t !== 'wall') deg++;
-        }
+        for (let i = 0; i < 4; i++) if (canGo(S, x, y, i)) deg++;
         if (deg >= 3) junction++;
         if (deg === 1) dead++;
       }
       return { w: S.w, h: S.h, walk, junction, dead, items, gates };
     }, id);
-    console.log(`   ${id}  ${String(info.w).padStart(2)}×${String(info.h).padStart(2)}  通れるマス${String(info.walk).padStart(3)}  分岐点${String(info.junction).padStart(2)}  袋小路${String(info.dead).padStart(2)}  単位${String(info.items).padStart(2)}  関門${info.gates}`);
+    console.log(`   ${id}  ${String(info.w).padStart(2)}×${String(info.h).padStart(2)}  セル数${String(info.walk).padStart(3)}  分岐点${String(info.junction).padStart(2)}  袋小路${String(info.dead).padStart(2)}  単位${String(info.items).padStart(2)}  関門${info.gates}`);
   }
 
   console.log('\n■ 2. 後戻り禁止');
