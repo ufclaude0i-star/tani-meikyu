@@ -1955,6 +1955,13 @@ var R3 = (function () {
     $('btn-howto').onclick = function () { $('modal-howto').classList.remove('hidden'); };
     $('btn-howto2').onclick = function () { $('modal-howto').classList.remove('hidden'); };
     $('howto-close').onclick = function () { $('modal-howto').classList.add('hidden'); };
+    // 説明の外側（暗い部分）をクリック／タップしても閉じる
+    $('modal-howto').addEventListener('click', function (e) {
+      if (e.target === this) this.classList.add('hidden');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') $('modal-howto').classList.add('hidden');
+    });
     $('btn-back').onclick = function () { show('title'); };
     $('btn-tomenu').onclick = function () { renderSelect(); show('select'); };
     $('btn-undo').onclick = undo;
