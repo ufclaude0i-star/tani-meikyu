@@ -37,10 +37,15 @@
   var SE = {
     step:   function () { tone(280, 0.05, 'sine', 0.025); },
     absorb: function () { tone(300, 0.14, 'triangle', 0.07, 0, 480); },
-    cancel: function (n) {                       // 相殺：きらきらと消える音
-      var base = [880, 1175, 1568, 2093];
-      for (var i = 0; i < 3; i++) tone(base[Math.min(3, i + (n || 1) - 1)], 0.16, 'triangle', 0.075, i * 0.055);
-      tone(2600, 0.25, 'sine', 0.03, 0.02);
+    cancel: function (n) {
+      // 相殺：高音の上昇アルペジオ＋きらめきの余韻。コンボが続くほど半音3つずつ上がる
+      var base = 1568 * Math.pow(2, Math.min(9, ((n || 1) - 1) * 3) / 12);
+      [0, 4, 7, 12].forEach(function (semi, i) {
+        tone(base * Math.pow(2, semi / 12), 0.15, 'triangle', 0.08, i * 0.042);
+      });
+      tone(base * 4, 0.55, 'sine', 0.038, 0.07);
+      tone(base * 2, 0.40, 'sine', 0.030, 0.14);
+      tone(base * 6, 0.30, 'sine', 0.018, 0.20);
     },
     closer: function () { tone(660, 0.12, 'sine', 0.05, 0, 880); },
     farther:function () { tone(200, 0.13, 'square', 0.035); },

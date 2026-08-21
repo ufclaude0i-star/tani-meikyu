@@ -10,6 +10,9 @@ var R3 = (function () {
   var P = { sin: 0, cos: 0, C: { x: 0, y: 0, z: 0 }, scale: 1, ox: 0, oy: 0, rot: 0 };
   var quads = [];
   var fx = [];
+  // 毎フレーム作ると重いものはキャッシュする（カメラは固定なので使い回せる）
+  var gradCache = {}, sphereCache = {}, shadowPath = null;
+  function clearCaches() { gradCache = {}; sphereCache = {}; shadowPath = null; }
 
   var COL = {
     sky1: '#7FCDF0', sky2: '#CDEEFF',
@@ -32,6 +35,7 @@ var R3 = (function () {
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    clearCaches();
   }
 
   /* ---------- 投影 ---------- */
@@ -78,6 +82,7 @@ var R3 = (function () {
     P.sin = best.sin; P.cos = best.cos; P.C = best.C; P.scale = best.sc;
     P.ox = W / 2 - (best.minx + best.maxx) / 2 * P.scale;
     P.oy = best.padTop + (H - best.padTop - best.padBot) / 2 - (best.miny + best.maxy) / 2 * P.scale;
+    clearCaches();
   }
 
   /* ---------- 図形 ---------- */
@@ -85,6 +90,20 @@ var R3 = (function () {
     ctx.beginPath();
     ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
     ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  }
+  /** 上辺が明るい縦グラデーションで塗る（a,b が上、c,d が下） */
+  function quadV(a, b, c, d, colTop, colBot) {
+    var x0 = ((a.x + b.x) / 2) | 0, y0 = ((a.y + b.y) / 2) | 0, x1 = ((c.x + d.x) / 2) | 0, y1 = ((c.y + d.y) / 2) | 0;
+    var key = x0 + ',' + y0 + ',' + x1 + ',' + y1 + colTop + colBot;
+    var g = gradCache[key];
+    if (!g) {
+      g = ctx.createLinearGradient(x0, y0, x1, y1);
+      g.addColorStop(0, colTop); g.addColorStop(1, colBot);
+      gradCache[key] = g;
+    }
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+    ctx.closePath(); ctx.fillStyle = g; ctx.fill();
   }
   function corners(st, col, row, y, r) {
     var X = cellX(st, col, row), Z = cellZ(st, col, row);
@@ -104,7 +123,10 @@ var R3 = (function () {
       { p: [t.nw, t.sw, b.sw, b.nw], c: COL.wallW, d: (t.nw.d + t.sw.d) / 2 }
     ];
     faces.sort(function (a2, b2) { return b2.d - a2.d; });
-    for (var i = 0; i < 4; i++) quad(faces[i].p[0], faces[i].p[1], faces[i].p[2], faces[i].p[3], faces[i].c);
+    for (var i = 0; i < 4; i++) {
+      var f = faces[i];
+      quadV(f.p[0], f.p[1], f.p[2], f.p[3], shade(f.c, 26), shade(f.c, -10));
+    }
     quad(t.nw, t.ne, t.se, t.sw, COL.wallCap);
     // 上端の明るい縁
     ctx.beginPath();
@@ -114,7 +136,7 @@ var R3 = (function () {
   }
 
   /** セルの中心座標（範囲外でも計算できる＝外周の壁に使う） */
-  var WT = 0.105;                       // 壁の厚み（半分）
+  var WT = 0.062;                       // 壁の厚み（半分）
   /** (x,y) と隣（dir）の境目に立つ薄い壁パネルの底面矩形 */
   function edgeRect(st, x, y, i) {
     var X1 = cellX(st, x, y), Z1 = cellZ(st, x, y);
@@ -126,7 +148,9 @@ var R3 = (function () {
 
   /** 壁が床に落とす影（すべてを1つのパスにまとめて1回で塗る＝重なっても濃くならない） */
   function drawShadows(rects) {
+    if (shadowPath) { ctx.save(); ctx.fillStyle = COL.shadow; ctx.fill(shadowPath); ctx.restore(); return; }
     var LX = 0.50, LZ = 0.78;                 // 左上からの光
+    var path = (typeof Path2D !== 'undefined') ? new Path2D() : null;
     ctx.save();
     ctx.beginPath();
     for (var i = 0; i < rects.length; i++) {
@@ -137,11 +161,13 @@ var R3 = (function () {
         pr(r.x1 + LX * d, 0.012, r.z1 + LZ * d), pr(r.x0 + LX * d, 0.012, r.z1 + LZ * d)
       ];
       var hull = convexHull(pts);
-      ctx.moveTo(hull[0].x, hull[0].y);
-      for (var j = 1; j < hull.length; j++) ctx.lineTo(hull[j].x, hull[j].y);
-      ctx.closePath();
+      var tgt = path || ctx;
+      tgt.moveTo(hull[0].x, hull[0].y);
+      for (var j = 1; j < hull.length; j++) tgt.lineTo(hull[j].x, hull[j].y);
+      tgt.closePath();
     }
-    ctx.fillStyle = COL.shadow; ctx.fill();
+    ctx.fillStyle = COL.shadow;
+    if (path) { ctx.fill(path); shadowPath = path; } else ctx.fill();
     ctx.restore();
   }
   function convexHull(ps) {
@@ -170,25 +196,63 @@ var R3 = (function () {
     ctx.lineTo(top.se.x, top.se.y); ctx.lineTo(top.sw.x, top.sw.y); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
 
-  /* ---------- 半透明の球 ---------- */
+  /* ---------- ガラスの球（一度だけ描いてキャッシュし、以降は貼るだけ） ---------- */
+  function sphereSprite(hue, S, R) {
+    var key = hue + '_' + S + '_' + R;
+    var got = sphereCache[key];
+    if (got) return got;
+    var pad = Math.max(2, Math.round(R * 0.10));
+    var D = R * 2 + pad * 2;
+    var cv2 = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
+    if (!cv2) return null;
+    cv2.width = Math.ceil(D * dpr); cv2.height = Math.ceil(D * dpr);
+    var c2 = cv2.getContext('2d');
+    c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var cx = D / 2, cy = D / 2, r = R;
+
+    var g = c2.createRadialGradient(cx, cy, r * 0.05, cx, cy, r);
+    g.addColorStop(0.00, 'hsla(' + hue + ',' + S + '%,72%,.22)');
+    g.addColorStop(0.55, 'hsla(' + hue + ',' + S + '%,66%,.44)');
+    g.addColorStop(0.86, 'hsla(' + hue + ',' + S + '%,58%,.82)');
+    g.addColorStop(0.97, 'hsla(' + hue + ',' + (S + 6) + '%,64%,.95)');
+    g.addColorStop(1.00, 'hsla(' + hue + ',' + S + '%,52%,.55)');
+    c2.beginPath(); c2.arc(cx, cy, r, 0, 6.2832); c2.fillStyle = g; c2.fill();
+
+    var cg = c2.createRadialGradient(cx + r * 0.22, cy + r * 0.42, r * 0.04, cx + r * 0.18, cy + r * 0.34, r * 0.72);
+    cg.addColorStop(0, 'hsla(' + hue + ',100%,88%,.75)');
+    cg.addColorStop(1, 'hsla(' + hue + ',100%,88%,0)');
+    c2.save(); c2.beginPath(); c2.arc(cx, cy, r * 0.99, 0, 6.2832); c2.clip();
+    c2.fillStyle = cg; c2.fillRect(0, 0, D, D); c2.restore();
+
+    c2.lineWidth = Math.max(1, r * 0.075);
+    var rim = c2.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+    rim.addColorStop(0, 'rgba(255,255,255,.95)');
+    rim.addColorStop(0.5, 'hsla(' + hue + ',100%,86%,.55)');
+    rim.addColorStop(1, 'hsla(' + hue + ',100%,92%,.85)');
+    c2.beginPath(); c2.arc(cx, cy, r * 0.985, 0, 6.2832); c2.strokeStyle = rim; c2.stroke();
+
+    var hl = c2.createRadialGradient(cx - r * 0.34, cy - r * 0.40, 0, cx - r * 0.34, cy - r * 0.40, r * 0.52);
+    hl.addColorStop(0, 'rgba(255,255,255,.92)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    c2.beginPath(); c2.arc(cx - r * 0.34, cy - r * 0.40, r * 0.52, 0, 6.2832); c2.fillStyle = hl; c2.fill();
+    c2.beginPath();
+    c2.ellipse(cx - r * 0.36, cy - r * 0.44, r * 0.19, r * 0.12, -0.6, 0, 6.2832);
+    c2.fillStyle = 'rgba(255,255,255,.98)'; c2.fill();
+
+    var rec = { cv: cv2, D: D };
+    sphereCache[key] = rec;
+    return rec;
+  }
   function sphere(pt, rWorld, hue, alpha, sat) {
-    var r = Math.max(3, pt.s * rWorld);
+    var r = Math.max(4, pt.s * rWorld);
+    var R = Math.max(4, Math.round(r / 1.5) * 1.5);      // 1.5pxごとに丸めてキャッシュ数を抑える
+    var spr = sphereSprite(Math.round(hue), sat || 88, R);
+    if (!spr) return;
     ctx.save();
     ctx.globalAlpha = alpha;
-    var g = ctx.createRadialGradient(pt.x - r * 0.34, pt.y - r * 0.40, r * 0.08, pt.x, pt.y, r);
-    g.addColorStop(0, 'hsla(' + hue + ',100%,96%,1)');
-    g.addColorStop(0.40, 'hsla(' + hue + ',' + (sat || 88) + '%,72%,.92)');
-    g.addColorStop(0.86, 'hsla(' + hue + ',' + (sat || 88) + '%,52%,.62)');
-    g.addColorStop(1, 'hsla(' + hue + ',' + (sat || 88) + '%,44%,.30)');
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, 6.2832); ctx.fillStyle = g; ctx.fill();
-    ctx.lineWidth = Math.max(1, r * 0.10);
-    ctx.strokeStyle = 'hsla(' + hue + ',100%,90%,.85)'; ctx.stroke();
-    ctx.globalAlpha = alpha * 0.95;
-    ctx.beginPath();
-    ctx.ellipse(pt.x - r * 0.32, pt.y - r * 0.38, r * 0.27, r * 0.17, -0.6, 0, 6.2832);
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+    ctx.drawImage(spr.cv, pt.x - spr.D / 2, pt.y - spr.D / 2, spr.D, spr.D);
     ctx.restore();
   }
+
   function halo(pt, rWorld, color) {
     var r = pt.s * rWorld;
     var g = ctx.createRadialGradient(pt.x, pt.y, r * 0.35, pt.x, pt.y, r);
@@ -333,11 +397,11 @@ var R3 = (function () {
           labels.push({ k: 'chip', p: pr(pX, 0.92, pZ), t: (ok ? '🔓 ' : '🔒 ') + condShort(cc.cond), bg: cg, fg: '#fff', sc: 0.26 });
         } else if (cc.t === 'op' || cc.t === 'pow') {
           var hue = cc.t === 'pow' ? HUE.pow : (cc.op === '*' ? HUE.mul : HUE.div);
-          groundShadow(pr(pX, 0.02, pZ), 0.24, 0.16);
-          var sp = pr(pX, 0.40 + bob, pZ);
-          sphere(sp, 0.30, hue, 0.72);
-          bigText(sp.x, sp.y, tileLabel(cc), Math.max(10, Math.min(24, sp.s * 0.28)), '#ffffff', 'rgba(40,20,55,.92)');
-          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.62, h: sp.s * 0.62 });
+          groundShadow(pr(pX, 0.02, pZ), 0.30, 0.15);
+          var sp = pr(pX, 0.44 + bob, pZ);
+          sphere(sp, 0.385, hue, 0.86);
+          bigText(sp.x, sp.y, tileLabel(cc), Math.max(11, Math.min(27, sp.s * 0.32)), '#ffffff', 'rgba(38,18,52,.85)');
+          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.80, h: sp.s * 0.80 });
         } else if (cc.t === 'goal') {
           labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.26 });
           labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#DFFFF6' : '#ffffff' });
@@ -419,7 +483,7 @@ var R3 = (function () {
       return;
     }
     halo(p1, rw * 2.0, 'hsla(' + hue + ',100%,72%,.5)');
-    sphere(p1, rw, hue, 0.74, 98);
+    sphere(p1, rw, hue, 0.88, 98);
     // 中心の光（主人公だと分かるように）
     ctx.save(); ctx.globalAlpha = 0.85;
     var cr = p1.s * rw * 0.34;
