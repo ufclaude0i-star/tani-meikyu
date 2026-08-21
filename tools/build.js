@@ -1,0 +1,11 @@
+const fs = require('fs'), path = require('path');
+const R = f => fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8');
+let html = R('index.template.html');
+html = html.replace('/*__CSS__*/', R('style.css'));
+html = html.replace('/*__CORE__*/', R('core.js'));
+html = html.replace('/*__STAGES__*/', R('stages.js'));
+html = html.replace('/*__RENDER__*/', R('render.js'));
+html = html.replace('/*__UI__*/', R('ui.js'));
+const out = path.join(__dirname, '..', 'dist', 'index.html');
+fs.writeFileSync(out, html, 'utf8');
+console.log('built ->', out, (Buffer.byteLength(html) / 1024).toFixed(1) + ' KB');
