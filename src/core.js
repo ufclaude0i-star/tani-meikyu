@@ -198,7 +198,7 @@ function condShort(c) {
 
 /** そのマスに入れるか（goalV を渡すと EXIT は単位一致でのみ通れる） */
 function canEnter(hand, cell, goalV) {
-  if (!cell || cell.t === 'wall') return { ok: false, why: 'ここは壁だ' };
+  if (!cell) return { ok: false, why: 'ここは盤面の外だ' };
   if (cell.t === 'gate') {
     return evalCond(hand, cell.cond)
       ? { ok: true }
@@ -232,24 +232,30 @@ function isItem(cell) { return !!cell && (cell.t === 'op' || cell.t === 'pow'); 
  */
 function buildStage(def) {
   var rows = def.grid;
-  var h = rows.length, w = 0;
-  for (var i = 0; i < h; i++) w = Math.max(w, rows[i].length);
+  var GH = rows.length, GW = 0;
+  for (var i = 0; i < GH; i++) GW = Math.max(GW, rows[i].length);
+  var w = (GW - 1) / 2, h = (GH - 1) / 2;      // 論理セルの数
+  var at = function (x, y) { return (rows[y] && rows[y][x]) || '#'; };
   var cells = [], start = null, goal = null;
-  for (var y = 0; y < h; y++) {
+  for (var cy = 0; cy < h; cy++) {
     var row = [];
-    for (var x = 0; x < w; x++) {
-      var ch = rows[y][x] || '#';
+    for (var cx = 0; cx < w; cx++) {
+      var ch = at(2 * cx + 1, 2 * cy + 1);
       var cell;
-      if (ch === '#') cell = { t: 'wall' };
-      else if (ch === '.') cell = { t: 'floor' };
-      else if (ch === 'S') { cell = { t: 'start' }; start = { x: x, y: y }; }
-      else if (ch === 'G') { cell = { t: 'goal' }; goal = { x: x, y: y }; }
+      if (ch === '.' || ch === '#') cell = { t: 'floor' };
+      else if (ch === 'S') { cell = { t: 'start' }; start = { x: cx, y: cy }; }
+      else if (ch === 'G') { cell = { t: 'goal' }; goal = { x: cx, y: cy }; }
       else {
         var proto = def.legend && def.legend[ch];
         if (!proto) throw new Error('legendに ' + ch + ' がない (' + def.id + ')');
         cell = JSON.parse(JSON.stringify(proto));
       }
-      cell.x = x; cell.y = y;
+      cell.x = cx; cell.y = cy;
+      cell.wall =
+        (at(2 * cx + 1, 2 * cy) === '#' ? WN : 0) |
+        (at(2 * cx + 2, 2 * cy + 1) === '#' ? WE : 0) |
+        (at(2 * cx + 1, 2 * cy + 2) === '#' ? WS : 0) |
+        (at(2 * cx, 2 * cy + 1) === '#' ? WW : 0);
       row.push(cell);
     }
     cells.push(row);
@@ -268,7 +274,21 @@ function cellAt(stage, x, y) {
   return stage.cells[y][x];
 }
 
-var DIRS = [{ dx: 0, dy: -1, n: '上' }, { dx: 0, dy: 1, n: '下' }, { dx: -1, dy: 0, n: '左' }, { dx: 1, dy: 0, n: '右' }];
+/* 壁のビット: 北=1 東=2 南=4 西=8 */
+var WN = 1, WE = 2, WS = 4, WW = 8;
+var DIRS = [
+  { dx: 0, dy: -1, n: '上', b: WN },
+  { dx: 0, dy: 1, n: '下', b: WS },
+  { dx: -1, dy: 0, n: '左', b: WW },
+  { dx: 1, dy: 0, n: '右', b: WE }
+];
+/** (x,y) から DIRS[i] の方向へ壁なしで進めるか */
+function canGo(stage, x, y, i) {
+  var c = cellAt(stage, x, y);
+  if (!c) return false;
+  if (c.wall & DIRS[i].b) return false;
+  return !!cellAt(stage, x + DIRS[i].dx, y + DIRS[i].dy);
+}
 
 /**
  * 後戻り禁止（一度通ったマスには入れない）のもとで、
@@ -302,11 +322,10 @@ function feasible(stage, state) {
       }
     } else if (c.t === 'pow') hasPow = true;
     for (var mm = 0; mm < DIRS.length; mm++) {
+      if (!canGo(stage, cx, cy, mm)) continue;
       var nx = cx + DIRS[mm].dx, ny = cy + DIRS[mm].dy;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       var ni = ny * w + nx;
       if (seen[ni] || vis[ni]) continue;
-      if (stage.cells[ny][nx].t === 'wall') continue;
       seen[ni] = 1; q[tail++] = ni;
     }
   }
@@ -350,11 +369,10 @@ function solve(stage, state, limit) {
         }
       } else if (c.t === 'pow') hasPow = true;
       for (var m = 0; m < DIRS.length; m++) {
+        if (!canGo(stage, cx, cy, m)) continue;
         var nx = cx + DIRS[m].dx, ny = cy + DIRS[m].dy;
-        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
         var ni = ny * w + nx;
         if (seen[ni] || vis[ni]) continue;
-        if (stage.cells[ny][nx].t === 'wall') continue;
         seen[ni] = 1; q[tail++] = ni;
       }
     }
@@ -379,12 +397,11 @@ function solve(stage, state, limit) {
     if (best && stack.length + 1 >= best.length) return;
     if (hopeless(x, y, hand)) return;
     for (var i = 0; i < DIRS.length; i++) {
+      if (!canGo(stage, x, y, i)) continue;
       var nx = x + DIRS[i].dx, ny = y + DIRS[i].dy;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       var ni = ny * w + nx;
       if (vis[ni]) continue;
       var cell = stage.cells[ny][nx];
-      if (cell.t === 'wall') continue;
       if (!canEnter(hand, cell, stage.goalV).ok) continue;
       vis[ni] = 1; stack.push(DIRS[i].n);
       dfs(nx, ny, applyCell(hand, cell));
@@ -402,7 +419,7 @@ if (typeof module !== 'undefined' && module.exports) {
     BASE: BASE, vnew: vnew, vmul: vmul, vpow: vpow, veq: veq, vzero: vzero, vdist: vdist,
     vkey: vkey, parseUnit: parseUnit, unitHTML: unitHTML, unitHTMLBase: unitHTMLBase, unitText: unitText,
     quantityName: quantityName, evalCond: evalCond, condLabel: condLabel, condShort: condShort,
-    canEnter: canEnter, applyCell: applyCell, isItem: isItem, vL1: vL1, vAllEven: vAllEven,
+    canEnter: canEnter, applyCell: applyCell, isItem: isItem, vL1: vL1, vAllEven: vAllEven, canGo: canGo,
     buildStage: buildStage, cellAt: cellAt, solve: solve, feasible: feasible, UNITS: UNITS, DIRS: DIRS
   };
 }

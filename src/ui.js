@@ -122,12 +122,12 @@
   var rafId = null;
   function reachMap() {
     var st = G.stage, m = new Uint8Array(st.w * st.h);
-    [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(function (d) {
-      var nx = G.x + d[0], ny = G.y + d[1], c = cellAt(st, nx, ny);
-      if (!c || c.t === 'wall') return;
-      if (G.visited[ny * st.w + nx]) return;
-      if (canEnter(G.hand, c, st.goalV).ok) m[ny * st.w + nx] = 1;
-    });
+    for (var i = 0; i < DIRS.length; i++) {
+      if (!canGo(st, G.x, G.y, i)) continue;
+      var nx = G.x + DIRS[i].dx, ny = G.y + DIRS[i].dy;
+      if (G.visited[ny * st.w + nx]) continue;
+      if (canEnter(G.hand, cellAt(st, nx, ny), st.goalV).ok) m[ny * st.w + nx] = 1;
+    }
     return m;
   }
   function popScale() {
@@ -211,8 +211,10 @@
   function tryMove(dx, dy) {
     if (!G || G.done) return false;
     var st = G.stage, nx = G.x + dx, ny = G.y + dy;
+    var di = -1;
+    for (var i = 0; i < DIRS.length; i++) if (DIRS[i].dx === dx && DIRS[i].dy === dy) di = i;
+    if (di < 0 || !canGo(st, G.x, G.y, di)) { bump(dx, dy, nx, ny); return false; }
     var c = cellAt(st, nx, ny);
-    if (!c || c.t === 'wall') { bump(dx, dy, nx, ny); return false; }
     if (G.visited[ny * st.w + nx]) { bump(dx, dy, nx, ny); toast('一度通った道は崩れている。後戻りはできない。', ''); return false; }
     var ce = canEnter(G.hand, c, st.goalV);
     if (!ce.ok) { bump(dx, dy, nx, ny); toast(ce.why, ''); return false; }
@@ -439,6 +441,13 @@
     $('btn-howto').onclick = function () { $('modal-howto').classList.remove('hidden'); };
     $('btn-howto2').onclick = function () { $('modal-howto').classList.remove('hidden'); };
     $('howto-close').onclick = function () { $('modal-howto').classList.add('hidden'); };
+    // 説明の外側（暗い部分）をクリック／タップしても閉じる
+    $('modal-howto').addEventListener('click', function (e) {
+      if (e.target === this) this.classList.add('hidden');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') $('modal-howto').classList.add('hidden');
+    });
     $('btn-back').onclick = function () { show('title'); };
     $('btn-tomenu').onclick = function () { renderSelect(); show('select'); };
     $('btn-undo').onclick = undo;

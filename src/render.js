@@ -6,16 +6,17 @@ var R3 = (function () {
   'use strict';
 
   var cv, ctx, W = 0, H = 0, dpr = 1;
-  var WALLH = 0.70;
+  var WALLH = 0.50;
   var P = { sin: 0, cos: 0, C: { x: 0, y: 0, z: 0 }, scale: 1, ox: 0, oy: 0, rot: 0 };
   var quads = [];
   var fx = [];
 
   var COL = {
     sky1: '#7FCDF0', sky2: '#CDEEFF',
-    grass: '#3FA83F', grassEdge: '#7A5C3A',
-    wallTop: '#CE9455', wallS: '#A56B37', wallN: '#8A5730', wallE: '#966032', wallW: '#7E4E2A',
-    pit: '#4A3B2C', pitTop: '#5C4A38',
+    grass: '#6FBE73', grass2: '#67B46B', grassEdge: '#7A5C3A',
+    wallCap: '#E8C08A', wallS: '#C08A52', wallN: '#9A6A3C', wallE: '#B07C48', wallW: '#8F6034',
+    shadow: 'rgba(58,66,110,.30)',
+    pit: '#6A5B45', pitTop: '#7A6A52',
     gateLock: '#E04B4B', gateOpen: '#43A047',
     goal: '#17A398', goalTop: '#26C6BA',
     start: '#EFE2C0'
@@ -89,30 +90,82 @@ var R3 = (function () {
     var X = cellX(st, col, row), Z = cellZ(st, col, row);
     return { nw: pr(X - r, y, Z - r), ne: pr(X + r, y, Z - r), se: pr(X + r, y, Z + r), sw: pr(X - r, y, Z + r) };
   }
-  function box(st, col, row, y0, y1, cTop, cS, cN, cE, cW) {
-    var b = corners(st, col, row, y0, 0.5), t = corners(st, col, row, y1, 0.5);
+  /** 直方体（薄い壁パネルにも使う） */
+  function slab(x0, x1, z0, z1, y1) {
+    var b = {
+      nw: pr(x0, 0, z0), ne: pr(x1, 0, z0), se: pr(x1, 0, z1), sw: pr(x0, 0, z1)
+    }, t = {
+      nw: pr(x0, y1, z0), ne: pr(x1, y1, z0), se: pr(x1, y1, z1), sw: pr(x0, y1, z1)
+    };
     var faces = [
-      { p: [t.sw, t.se, b.se, b.sw], c: cS, d: (t.sw.d + t.se.d) / 2 },
-      { p: [t.ne, t.nw, b.nw, b.ne], c: cN, d: (t.ne.d + t.nw.d) / 2 },
-      { p: [t.se, t.ne, b.ne, b.se], c: cE, d: (t.se.d + t.ne.d) / 2 },
-      { p: [t.nw, t.sw, b.sw, b.nw], c: cW, d: (t.nw.d + t.sw.d) / 2 }
+      { p: [t.sw, t.se, b.se, b.sw], c: COL.wallS, d: (t.sw.d + t.se.d) / 2 },
+      { p: [t.ne, t.nw, b.nw, b.ne], c: COL.wallN, d: (t.ne.d + t.nw.d) / 2 },
+      { p: [t.se, t.ne, b.ne, b.se], c: COL.wallE, d: (t.se.d + t.ne.d) / 2 },
+      { p: [t.nw, t.sw, b.sw, b.nw], c: COL.wallW, d: (t.nw.d + t.sw.d) / 2 }
     ];
     faces.sort(function (a2, b2) { return b2.d - a2.d; });
     for (var i = 0; i < 4; i++) quad(faces[i].p[0], faces[i].p[1], faces[i].p[2], faces[i].p[3], faces[i].c);
-    quad(t.nw, t.ne, t.se, t.sw, cTop);
+    quad(t.nw, t.ne, t.se, t.sw, COL.wallCap);
+    // 上端の明るい縁
+    ctx.beginPath();
+    ctx.moveTo(t.nw.x, t.nw.y); ctx.lineTo(t.ne.x, t.ne.y); ctx.lineTo(t.se.x, t.se.y); ctx.lineTo(t.sw.x, t.sw.y);
+    ctx.closePath();
+    ctx.lineWidth = Math.max(0.8, t.nw.s * 0.035); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.stroke();
   }
+
+  /** セルの中心座標（範囲外でも計算できる＝外周の壁に使う） */
+  var WT = 0.105;                       // 壁の厚み（半分）
+  /** (x,y) と隣（dir）の境目に立つ薄い壁パネルの底面矩形 */
+  function edgeRect(st, x, y, i) {
+    var X1 = cellX(st, x, y), Z1 = cellZ(st, x, y);
+    var X2 = cellX(st, x + DIRS[i].dx, y + DIRS[i].dy), Z2 = cellZ(st, x + DIRS[i].dx, y + DIRS[i].dy);
+    var mx = (X1 + X2) / 2, mz = (Z1 + Z2) / 2;
+    if (Math.abs(X1 - X2) > 0.5) return { x0: mx - WT, x1: mx + WT, z0: mz - 0.5 - WT, z1: mz + 0.5 + WT };
+    return { x0: mx - 0.5 - WT, x1: mx + 0.5 + WT, z0: mz - WT, z1: mz + WT };
+  }
+
+  /** 壁が床に落とす影（すべてを1つのパスにまとめて1回で塗る＝重なっても濃くならない） */
+  function drawShadows(rects) {
+    var LX = 0.50, LZ = 0.78;                 // 左上からの光
+    ctx.save();
+    ctx.beginPath();
+    for (var i = 0; i < rects.length; i++) {
+      var r = rects[i], d = WALLH;
+      var pts = [
+        pr(r.x0, 0.012, r.z0), pr(r.x1, 0.012, r.z0), pr(r.x1, 0.012, r.z1), pr(r.x0, 0.012, r.z1),
+        pr(r.x0 + LX * d, 0.012, r.z0 + LZ * d), pr(r.x1 + LX * d, 0.012, r.z0 + LZ * d),
+        pr(r.x1 + LX * d, 0.012, r.z1 + LZ * d), pr(r.x0 + LX * d, 0.012, r.z1 + LZ * d)
+      ];
+      var hull = convexHull(pts);
+      ctx.moveTo(hull[0].x, hull[0].y);
+      for (var j = 1; j < hull.length; j++) ctx.lineTo(hull[j].x, hull[j].y);
+      ctx.closePath();
+    }
+    ctx.fillStyle = COL.shadow; ctx.fill();
+    ctx.restore();
+  }
+  function convexHull(ps) {
+    var p = ps.slice().sort(function (a, b) { return a.x - b.x || a.y - b.y; });
+    var cross = function (o, a, b) { return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); };
+    var lo = [], hi = [], i;
+    for (i = 0; i < p.length; i++) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p[i]) <= 0) lo.pop(); lo.push(p[i]); }
+    for (i = p.length - 1; i >= 0; i--) { while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], p[i]) <= 0) hi.pop(); hi.push(p[i]); }
+    lo.pop(); hi.pop();
+    return lo.concat(hi);
+  }
+
   function plate(st, col, row, color, inset, y) {
     var c = corners(st, col, row, y === undefined ? 0.02 : y, 0.5 - (inset === undefined ? 0.08 : inset));
     quad(c.nw, c.ne, c.se, c.sw, color);
   }
   /** 通った跡：地面が崩れて穴になる（もう戻れないことを見た目で伝える） */
   function pit(st, col, row) {
-    var top = corners(st, col, row, 0, 0.5), bot = corners(st, col, row, -0.34, 0.5);
+    var top = corners(st, col, row, 0, 0.5), bot = corners(st, col, row, -0.17, 0.5);
     quad(top.sw, top.se, bot.se, bot.sw, COL.pit);
-    quad(top.se, top.ne, bot.ne, bot.se, '#3E3125');
-    quad(top.nw, top.sw, bot.sw, bot.nw, '#3E3125');
-    quad(bot.nw, bot.ne, bot.se, bot.sw, '#2E241A');
-    ctx.save(); ctx.globalAlpha = .5; ctx.strokeStyle = '#8A6B4A'; ctx.lineWidth = 1.2;
+    quad(top.se, top.ne, bot.ne, bot.se, '#5B4E3C');
+    quad(top.nw, top.sw, bot.sw, bot.nw, '#5B4E3C');
+    quad(bot.nw, bot.ne, bot.se, bot.sw, '#4C4132');
+    ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = '#3E3527'; ctx.lineWidth = 1.1;
     ctx.beginPath(); ctx.moveTo(top.nw.x, top.nw.y); ctx.lineTo(top.ne.x, top.ne.y);
     ctx.lineTo(top.se.x, top.se.y); ctx.lineTo(top.sw.x, top.sw.y); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
@@ -215,65 +268,87 @@ var R3 = (function () {
     g.addColorStop(0, COL.sky1); g.addColorStop(1, COL.sky2);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
+    // 床（1枚の平面）と土台
     var gx = halfX(st), gz = halfZ(st);
     quad(pr(-gx, 0, -gz), pr(gx, 0, -gz), pr(gx, 0, gz), pr(-gx, 0, gz), COL.grass);
-    quad(pr(-gx, 0, gz), pr(gx, 0, gz), pr(gx, -0.55, gz), pr(-gx, -0.55, gz), COL.grassEdge);
+    quad(pr(-gx, 0, gz), pr(gx, 0, gz), pr(gx, -0.45, gz), pr(-gx, -0.45, gz), COL.grassEdge);
+    quad(pr(gx, 0, -gz), pr(gx, 0, gz), pr(gx, -0.45, gz), pr(gx, -0.45, -gz), shade(COL.grassEdge, -14));
+    ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,.055)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var gi = -gx + 1; gi < gx; gi++) { var a1 = pr(gi, 0.004, -gz), a2 = pr(gi, 0.004, gz); ctx.moveTo(a1.x, a1.y); ctx.lineTo(a2.x, a2.y); }
+    for (gi = -gz + 1; gi < gz; gi++) { var b1 = pr(-gx, 0.004, gi), b2 = pr(gx, 0.004, gi); ctx.moveTo(b1.x, b1.y); ctx.lineTo(b2.x, b2.y); }
+    ctx.stroke(); ctx.restore();
+
+    // 壁パネルを列挙 → まとめて影を落とす
+    var rows2 = [];
+    var allRects = [];
+    for (var y = 0; y < st.h; y++) {
+      var hN = [], vWE = [];
+      for (var x = 0; x < st.w; x++) {
+        var c = st.cells[y][x];
+        if (c.wall & 1) { var r1 = edgeRect(st, x, y, 0); hN.push(r1); allRects.push(r1); }
+        if (c.wall & 8) { var r2 = edgeRect(st, x, y, 2); vWE.push(r2); allRects.push(r2); }
+        if (x === st.w - 1 && (c.wall & 2)) { var r3 = edgeRect(st, x, y, 3); vWE.push(r3); allRects.push(r3); }
+      }
+      rows2.push({ hN: hN, vWE: vWE });
+    }
+    var southEnd = [];
+    for (x = 0; x < st.w; x++) {
+      if (st.cells[st.h - 1][x].wall & 4) { var r4 = edgeRect(st, x, st.h - 1, 1); southEnd.push(r4); allRects.push(r4); }
+    }
+    drawShadows(allRects);
 
     var ready = veq(S.hand, st.goalV);
 
-    for (var row = 0; row < st.h; row++) {
-      for (var col = 0; col < st.w; col++) {
-        var c = st.cells[row][col];
-        if (c.t === 'wall') continue;
-        var X = cellX(st, col, row), Z = cellZ(st, col, row);
-        quads.push({ col: col, row: row, p: [pr(X - .5, 0, Z - .5), pr(X + .5, 0, Z - .5), pr(X + .5, 0, Z + .5), pr(X - .5, 0, Z + .5)] });
-        var vI = S.visited[row * st.w + col];
-        if (vI && !(col === S.cx && row === S.cy)) { pit(st, col, row); continue; }
-        if (S.reach[row * st.w + col]) plate(st, col, row, 'rgba(255,246,170,.65)', 0.10);
-        if (c.t === 'start') plate(st, col, row, COL.start, 0.16);
-        if (c.t === 'goal') plate(st, col, row, ready ? '#5FE6D8' : COL.goalTop, 0.06);
+    for (y = 0; y < st.h; y++) {
+      // 床のしるし
+      for (x = 0; x < st.w; x++) {
+        var cc = st.cells[y][x];
+        var X = cellX(st, x, y), Z = cellZ(st, x, y);
+        quads.push({ col: x, row: y, p: [pr(X - .5, 0, Z - .5), pr(X + .5, 0, Z - .5), pr(X + .5, 0, Z + .5), pr(X - .5, 0, Z + .5)] });
+        var vI = S.visited[y * st.w + x];
+        if (vI && !(x === S.cx && y === S.cy)) { pit(st, x, y); continue; }
+        if (S.reach[y * st.w + x]) plate(st, x, y, 'rgba(255,246,170,.7)', 0.14);
+        if (cc.t === 'start') plate(st, x, y, COL.start, 0.2);
+        if (cc.t === 'goal') plate(st, x, y, ready ? '#5FE6D8' : COL.goalTop, 0.12);
       }
-      for (col = 0; col < st.w; col++) {
-        c = st.cells[row][col];
-        if (c.t === 'wall') { box(st, col, row, 0, WALLH, COL.wallTop, COL.wallS, COL.wallN, COL.wallE, COL.wallW); continue; }
-        if (S.visited[row * st.w + col]) continue;
-        var pX = cellX(st, col, row), pZ = cellZ(st, col, row);
-        if (c.t === 'gate') {
-          var openNS = walkable(st, col, row - 1) || walkable(st, col, row + 1);
-          var openEW = walkable(st, col - 1, row) || walkable(st, col + 1, row);
-          var ok = evalCond(S.hand, c.cond);
-          var cc = ok ? COL.gateOpen : COL.gateLock;
-          var th = 0.12, hh = 0.66;
-          var acrossX = P.rot ? !(openNS && !openEW) : (openNS && !openEW);
-          var a1 = acrossX ? [-.5, -th] : [-th, -.5], a2 = acrossX ? [.5, th] : [th, .5];
-          var x0 = pX + a1[0], z0 = pZ + a1[1], x1 = pX + a2[0], z1 = pZ + a2[1];
-          var tnw = pr(x0, hh, z0), tne = pr(x1, hh, z0), tse = pr(x1, hh, z1), tsw = pr(x0, hh, z1);
-          var bnw = pr(x0, 0, z0), bne = pr(x1, 0, z0), bse = pr(x1, 0, z1), bsw = pr(x0, 0, z1);
-          ctx.globalAlpha = ok ? 0.45 : 0.85;
-          quad(tsw, tse, bse, bsw, cc);
-          quad(tne, tnw, bnw, bne, shade(cc, -18));
-          quad(tnw, tne, tse, tsw, shade(cc, 22));
+      // 壁パネル（奥→手前）
+      for (var k = 0; k < rows2[y].hN.length; k++) { var q1 = rows2[y].hN[k]; slab(q1.x0, q1.x1, q1.z0, q1.z1, WALLH); }
+      for (k = 0; k < rows2[y].vWE.length; k++) { var q2 = rows2[y].vWE[k]; slab(q2.x0, q2.x1, q2.z0, q2.z1, WALLH); }
+      // セルの中身
+      for (x = 0; x < st.w; x++) {
+        cc = st.cells[y][x];
+        if (S.visited[y * st.w + x]) continue;
+        var pX = cellX(st, x, y), pZ = cellZ(st, x, y);
+        if (cc.t === 'gate') {
+          var ok = evalCond(S.hand, cc.cond);
+          var cg = ok ? COL.gateOpen : COL.gateLock;
+          ctx.globalAlpha = ok ? 0.32 : 0.6;
+          var gt = corners(st, x, y, 0.44, 0.34), gb = corners(st, x, y, 0, 0.34);
+          quad(gt.sw, gt.se, gb.se, gb.sw, cg);
+          quad(gt.se, gt.ne, gb.ne, gb.se, shade(cg, -18));
+          quad(gt.nw, gt.sw, gb.sw, gb.nw, shade(cg, -18));
+          quad(gt.nw, gt.ne, gt.se, gt.sw, shade(cg, 26));
           ctx.globalAlpha = 1;
-          labels.push({ k: 'chip', p: pr(pX, 1.05, pZ), t: (ok ? '🔓 ' : '🔒 ') + condShort(c.cond), bg: cc, fg: '#fff', sc: 0.3 });
-        } else if (c.t === 'op' || c.t === 'pow') {
-          // 道に落ちている単位も半透明の球
-          var hue = c.t === 'pow' ? HUE.pow : (c.op === '*' ? HUE.mul : HUE.div);
-          var iy = 0.42 + bob;
-          groundShadow(pr(pX, 0.02, pZ), 0.24, 0.18);
-          var sp = pr(pX, iy, pZ);
-          sphere(sp, 0.355, hue, 0.72);
-          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.72, h: sp.s * 0.72 });
-          bigText(sp.x, sp.y, tileLabel(c), Math.max(10, Math.min(24, sp.s * 0.34)), '#ffffff', 'rgba(40,20,55,.92)');
-        } else if (c.t === 'goal') {
-          labels.push({ k: 'chip', p: pr(pX, 1.24, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.32 });
-          labels.push({ k: 'text', p: pr(pX, 1.74, pZ), t: 'EXIT', sc: 0.42, fg: ready ? '#DFFFF6' : '#ffffff' });
+          labels.push({ k: 'chip', p: pr(pX, 0.92, pZ), t: (ok ? '🔓 ' : '🔒 ') + condShort(cc.cond), bg: cg, fg: '#fff', sc: 0.26 });
+        } else if (cc.t === 'op' || cc.t === 'pow') {
+          var hue = cc.t === 'pow' ? HUE.pow : (cc.op === '*' ? HUE.mul : HUE.div);
+          groundShadow(pr(pX, 0.02, pZ), 0.24, 0.16);
+          var sp = pr(pX, 0.40 + bob, pZ);
+          sphere(sp, 0.30, hue, 0.72);
+          bigText(sp.x, sp.y, tileLabel(cc), Math.max(10, Math.min(24, sp.s * 0.28)), '#ffffff', 'rgba(40,20,55,.92)');
+          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.62, h: sp.s * 0.62 });
+        } else if (cc.t === 'goal') {
+          labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.26 });
+          labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#DFFFF6' : '#ffffff' });
         }
       }
-      if (Math.round(S.py) === row) drawBall(st, S);
+      if (Math.round(S.py) === y) drawBall(st, S);
     }
+    for (k = 0; k < southEnd.length; k++) { var q3 = southEnd[k]; slab(q3.x0, q3.x1, q3.z0, q3.z1, WALLH); }
 
-    labels.sort(function (a, b) { return b.p.d - a.p.d; });
-    var placed = blockers.slice();   // 単位の球と重ならないように逃がす
+    labels.sort(function (a2, b2) { return b2.p.d - a2.p.d; });
+    var placed = blockers.slice();
     for (var li = 0; li < labels.length; li++) {
       var L = labels[li];
       var m = L.k === 'chip' ? measureChip(L.t, L.p.s, L.sc) : measureText(L.t, L.p.s, L.sc);
@@ -320,7 +395,6 @@ var R3 = (function () {
   }
   function outlineText(L, text, fill) { bigText(L.cx, L.cy, text, L.fs, fill, 'rgba(40,60,40,.9)'); }
 
-  function walkable(st, col, row) { var c = cellAt(st, col, row); return !!c && c.t !== 'wall'; }
   function shade(hex, amt) {
     var n = parseInt(hex.slice(1), 16);
     return 'rgb(' + Math.max(0, Math.min(255, (n >> 16) + amt)) + ',' +
