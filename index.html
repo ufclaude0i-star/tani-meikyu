@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>単位迷宮 — Dimension Labyrinth</title>
+<meta name="description" content="物理の単位を掛けたり割ったりしながら3D迷路を抜ける、次元解析の学習ゲーム。">
+<style>/* ===== 単位迷宮 スタイル（明るいカートゥーン調） ===== */
+:root{
+  --sky1:#7FCDF0; --sky2:#CDEEFF;
+  --paper:#FBF6EA; --card:#FFFFFF;
+  --brown:#8B5A2B; --brown-d:#6E4520; --brown-l:#CE9455;
+  --green:#3FA83F; --green-d:#2F8B2F;
+  --yellow:#FFC93C; --yellow-d:#E5A400;
+  --mul:#7E57C2; --div:#EC5B8A; --gate:#E04B4B; --goal:#17A398;
+  --txt:#3A2E22; --dim:#8A7A68; --line:#E4D9C4;
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%}
+body{
+  background:var(--paper);
+  color:var(--txt);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,-apple-system,sans-serif;
+  overscroll-behavior:none;
+}
+sup{font-size:.62em;vertical-align:super;line-height:0}
+button{font-family:inherit;color:inherit;cursor:pointer}
+.hidden{display:none !important}
+.wrap{max-width:760px;margin:0 auto;padding:12px 12px 32px}
+
+/* ---- ボタン（ぷっくりカートゥーン） ---- */
+.btn{
+  background:var(--card);border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;
+  padding:11px 18px;font-size:15px;font-weight:800;color:var(--brown-d);transition:.12s;
+}
+.btn:hover{background:#FFF8E8;border-color:var(--brown-l)}
+.btn:active{transform:translateY(2px);border-bottom-width:2px}
+.btn.primary{background:linear-gradient(180deg,#FFD75E,#FFB92E);border-color:#D89A18;color:#4A3208}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.green{background:linear-gradient(180deg,#5FC85F,#3FA83F);border-color:#2C7F2C;color:#fff}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:12px}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+
+/* ---- タイトル ---- */
+#screen-title{text-align:center;padding-top:4vh}
+.sky-hero{background:linear-gradient(180deg,var(--sky1),var(--sky2));border-radius:22px;
+  padding:26px 16px 22px;border:3px solid #fff;box-shadow:0 8px 24px rgba(80,120,150,.22)}
+.logo{font-size:clamp(36px,10vw,62px);font-weight:900;letter-spacing:.05em;color:#fff;
+  text-shadow:0 4px 0 #5AA0C4,0 7px 14px rgba(0,0,0,.2)}
+.logo-sub{color:#2E6E8C;letter-spacing:.3em;font-size:12px;font-weight:800;margin-top:4px}
+.tagline{color:#31424F;margin:18px auto 0;max-width:480px;line-height:1.95;font-size:14.5px}
+.title-btns{display:flex;flex-direction:column;gap:12px;max-width:290px;margin:20px auto 0}
+.eqdemo{margin:20px auto 0;max-width:460px;background:var(--card);border:2px solid var(--line);
+  border-radius:var(--r);padding:14px;font-size:17px;font-weight:800;color:var(--brown-d)}
+.eqdemo .t{display:inline-block;padding:2px 9px;border-radius:9px;color:#fff;margin:0 2px}
+.eqdemo small{display:block;color:var(--dim);font-size:12px;margin-top:8px;font-weight:600;line-height:1.7}
+
+/* ---- ステージ選択 ---- */
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.topbar h2{margin:0;font-size:18px;flex:1;font-weight:900}
+.chapter{margin-bottom:20px}
+.chapter h3{font-size:13px;color:#fff;background:var(--green);display:inline-block;
+  padding:5px 12px;border-radius:99px;margin:0 0 10px;font-weight:800}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px}
+.card{background:var(--card);border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;
+  padding:11px;text-align:left;transition:.12s}
+.card:hover{border-color:var(--brown-l);transform:translateY(-2px)}
+.card:active{transform:translateY(1px)}
+.card .cid{font-size:11px;color:var(--dim);letter-spacing:.08em;font-weight:800}
+.card .cname{font-weight:900;margin:2px 0 7px;font-size:15px;color:var(--brown-d)}
+.card .cflow{font-size:14px;font-weight:800;color:var(--green-d)}
+.card .cflow .ar{color:var(--dim);margin:0 5px}
+.card .stars{margin-top:7px;font-size:14px;letter-spacing:2px;color:var(--yellow-d)}
+.card .stars .off{color:#DDD3C0}
+.progress-line{color:var(--dim);font-size:13px;margin-bottom:12px;font-weight:700}
+.setting-box{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:8px}
+
+/* ---- ゲーム画面 ---- */
+.gamebar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.icon-btn{width:42px;height:42px;border-radius:13px;background:var(--card);border:2px solid var(--line);
+  border-bottom-width:4px;font-size:19px;display:flex;align-items:center;justify-content:center;padding:0}
+.icon-btn:active{transform:translateY(2px);border-bottom-width:2px}
+.level-pill{flex:1;text-align:center;background:var(--brown);color:#fff;font-weight:900;
+  padding:9px 14px;border-radius:99px;border:3px solid #fff;box-shadow:0 3px 0 var(--brown-d);
+  font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.story{font-size:12.5px;color:var(--dim);font-weight:700;line-height:1.6;margin:0 2px 8px}
+.unitbar{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
+.ucard{flex:1;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 10px;min-width:0}
+.ucard .lbl{font-size:10.5px;color:var(--dim);font-weight:800}
+.ucard .val{font-size:clamp(19px,5.4vw,26px);font-weight:900;line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ucard.now{border-color:#F2D48A;background:#FFFBF0}
+.ucard.now .val{color:var(--yellow-d)}
+.ucard.goal{border-color:#9EDCD6;background:#F0FBFA}
+.ucard.goal .val{color:var(--goal)}
+.ucard .qname{font-size:10.5px;color:var(--dim);height:14px;overflow:hidden;font-weight:700}
+.arrowmid{display:flex;align-items:center;color:var(--dim);font-size:20px;font-weight:900}
+
+.stage3d{position:relative;width:100%;height:clamp(320px,52vh,520px);
+  border-radius:18px;overflow:hidden;border:3px solid #fff;box-shadow:0 6px 20px rgba(90,110,80,.22);
+  background:linear-gradient(180deg,var(--sky1),var(--sky2));touch-action:none}
+#cv{display:block;width:100%;height:100%}
+.overlay{position:absolute;inset:0;pointer-events:none}
+.hud-steps{position:absolute;top:8px;right:10px;background:rgba(255,255,255,.9);border-radius:99px;
+  padding:5px 12px;font-size:12.5px;font-weight:800;color:var(--brown-d)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);top:48px;max-width:86%;
+  background:rgba(58,46,34,.88);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;
+  border-radius:12px;opacity:0;transition:opacity .2s;text-align:center;line-height:1.5}
+.toast.on{opacity:1}
+.toast.good{background:rgba(47,139,47,.92)}
+.toast.info{background:rgba(23,120,163,.92)}
+
+/* ジョイスティック */
+.joy{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  width:112px;height:112px;border-radius:50%;background:rgba(255,255,255,.28);
+  border:4px solid rgba(255,255,255,.85);pointer-events:auto;touch-action:none}
+.joy .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
+  border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.28);transition:transform .06s}
+
+.distbar{margin-top:9px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:9px 12px}
+.distbar .track{height:11px;background:#EFE7D6;border-radius:8px;overflow:hidden}
+.distbar .fill{height:100%;background:linear-gradient(90deg,#7FD97F,var(--green));transition:width .25s;border-radius:8px}
+.distbar .cap{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);margin-top:5px;font-weight:700}
+
+.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px}
+.controls .btn{padding:9px 6px;font-size:13px}
+.legendbox{font-size:12px;color:var(--dim);margin-top:10px;line-height:2;font-weight:600;
+  background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px}
+.legendbox b{color:var(--txt)}
+.chip{display:inline-block;padding:2px 9px;border-radius:8px;font-weight:800;margin-right:3px;color:#fff}
+.chip.mul{background:var(--mul)} .chip.div{background:var(--div)}
+.chip.gate{background:var(--gate)} .chip.pow{background:#2E9BD6}
+
+/* ---- モーダル ---- */
+.modal{position:fixed;inset:0;background:rgba(58,46,34,.55);display:flex;align-items:center;justify-content:center;
+  padding:16px;z-index:50}
+.modal .box{background:var(--card);border:3px solid #fff;border-radius:22px;padding:22px;
+  max-width:520px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.modal h3{margin:0 0 6px;font-size:21px;font-weight:900;color:var(--brown-d)}
+.modal .stars-big{font-size:34px;color:var(--yellow-d);letter-spacing:6px;text-align:center;margin:6px 0 8px}
+.modal .stars-big .off{color:#E3D9C6}
+.formula{background:#FFF8E8;border:2px solid #F2D48A;border-radius:12px;padding:12px;
+  text-align:center;font-size:17px;font-weight:800;color:var(--brown-d);margin:12px 0}
+.quiz .q{font-weight:900;margin:14px 0 8px}
+.quiz .ch{display:block;width:100%;text-align:left;margin-bottom:7px;background:#FBF6EA;
+  border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:700}
+.quiz .ch:hover{border-color:var(--brown-l)}
+.quiz .ch.ok{background:#E4F6E4;border-color:var(--green)}
+.quiz .ch.ng{background:#FDE7EC;border-color:var(--div)}
+.quiz .exp{font-size:13px;color:#5D5044;line-height:1.85;margin-top:8px;background:#FBF6EA;border-radius:12px;padding:10px;font-weight:600}
+.modal .row{display:flex;gap:9px;margin-top:16px}
+.modal .row .btn{flex:1;text-align:center}
+.howto p{line-height:1.95;font-size:14px;color:#4A3E32}
+.howto h4{margin:15px 0 5px;color:var(--green-d);font-size:14px;font-weight:900}
+.switch{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);cursor:pointer;font-weight:700}
+.switch input{width:40px;height:23px;appearance:none;background:#DDD3C0;border-radius:20px;position:relative;transition:.2s;cursor:pointer;flex:none}
+.switch input:checked{background:var(--green)}
+.switch input::after{content:'';position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
+.switch input:checked::after{left:19px}
+.switch .sub{display:block;font-size:11.5px;color:var(--dim);font-weight:600}
+
+.masked{filter:blur(8px)}
+@media (max-width:420px){ .joy{width:100px;height:100px} .joy .knob{width:50px;height:50px;margin:-25px 0 0 -25px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= タイトル ================= -->
+  <section id="screen-title">
+    <div class="sky-hero">
+      <div class="logo">単位迷宮</div>
+      <div class="logo-sub">DIMENSION LABYRINTH</div>
+      <p class="tagline">
+        ボールが持っているのは「物理の単位」。<br>
+        道に落ちた <b>×m</b> や <b>÷s</b> を拾いながら、<br>
+        EXIT が要求する単位に <b>ぴったり</b> 合わせて脱出せよ。
+      </p>
+    </div>
+    <div class="title-btns">
+      <button class="btn primary" id="btn-start">はじめる</button>
+      <button class="btn" id="btn-howto">あそびかた</button>
+    </div>
+    <div class="eqdemo">
+      kg → <span class="t" style="background:#7E57C2">×m</span> → kg·m →
+      <span class="t" style="background:#EC5B8A">÷s</span><span class="t" style="background:#EC5B8A">÷s</span>
+      → kg·m/s² = <span style="color:#17A398">N</span>
+      <small>F = ma。公式を覚えていなくても、単位を組み立てれば答えの形が見える。</small>
+    </div>
+  </section>
+
+  <!-- ================= ステージ選択 ================= -->
+  <section id="screen-select" class="hidden">
+    <div class="topbar">
+      <button class="icon-btn" id="btn-back">🏠</button>
+      <h2>ステージ選択</h2>
+      <button class="icon-btn" id="btn-howto2">？</button>
+    </div>
+    <div id="stagelist"></div>
+    <div class="setting-box">
+      <label class="switch"><input type="checkbox" id="maskmode">
+        <span>記憶モード<span class="sub">手持ちの単位をぼかす。頭の中で計算する練習になる</span></span></label>
+      <label class="switch" style="margin-top:10px"><input type="checkbox" id="mute"><span>効果音</span></label>
+    </div>
+  </section>
+
+  <!-- ================= ゲーム ================= -->
+  <section id="screen-game" class="hidden">
+    <div class="gamebar">
+      <button class="icon-btn" id="btn-tomenu">🏠</button>
+      <div class="level-pill" id="level-pill">Level 1-1</div>
+      <button class="icon-btn" id="btn-tip">💡</button>
+    </div>
+    <div class="story" id="stage-story"></div>
+
+    <div class="unitbar">
+      <div class="ucard now">
+        <div class="lbl">いま持っている単位</div>
+        <div class="val" id="u-now">-</div>
+        <div class="qname" id="u-now-q"></div>
+      </div>
+      <div class="arrowmid">→</div>
+      <div class="ucard goal">
+        <div class="lbl">EXIT が要求する単位</div>
+        <div class="val" id="u-goal">-</div>
+        <div class="qname" id="u-goal-q"></div>
+      </div>
+    </div>
+
+    <div class="stage3d" id="stage3d">
+      <canvas id="cv"></canvas>
+      <div class="overlay">
+        <div class="hud-steps">手数 <span id="steps">0</span> / 最短 <span id="par">-</span></div>
+        <div class="toast" id="msg"></div>
+        <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
+      </div>
+    </div>
+
+    <div class="distbar">
+      <div class="track"><div class="fill" id="dist-fill" style="width:0%"></div></div>
+      <div class="cap"><span>EXIT の単位との「次元距離」</span><span id="dist-num"></span></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn sm" id="btn-undo">↩ もどす</button>
+      <button class="btn sm" id="btn-reset">やり直し</button>
+      <button class="btn sm" id="btn-hint">💡 段階ヒント</button>
+    </div>
+
+    <div class="legendbox">
+      <b>ルール</b>　道に浮かぶ半透明の球が「単位」。
+      <span class="chip mul">×m</span>掛ける　<span class="chip div">÷s</span>割る　
+      <span class="chip pow">√</span>指数を半分に　
+      <span class="chip gate">🔒</span>関門（条件を満たす単位でないと通れない）<br>
+      <b>後戻りできない。</b> 通った道は崩れて穴になる。手持ちが増えると球が大きくなり、
+      同じ単位で割ると<b>相殺</b>して小さくなる。<br>
+      <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD　　<b>Z</b>=もどす　<b>R</b>=やり直し
+    </div>
+  </section>
+</div>
+
+<!-- ================= あそびかた ================= -->
+<div class="modal hidden" id="modal-howto">
+  <div class="box howto">
+    <h3>あそびかた</h3>
+    <p>このゲームでは、ボールは「数値」ではなく<b>単位そのもの</b>を持ち歩きます。</p>
+    <h4>1. ゴールは「単位を合わせる」こと</h4>
+    <p>EXIT には必要な単位が書いてあります。そこに<b>ぴったり同じ単位</b>で到達したときだけクリアです。単位が違うと、EXIT に立っても扉は開きません。</p>
+    <h4>2. 道に浮かぶ単位の球を拾う</h4>
+    <p><span class="chip mul">×kg</span><span class="chip div">÷s</span> の球を通ると、手持ちの単位にその演算が起きます。手持ちが増えるほど自分の球は<b>大きく</b>なり、同じ単位で割ると<b>相殺</b>して小さくなります。すべて消せば無次元です。</p>
+    <h4>3. 後戻りできない</h4>
+    <p>一度通った道は<b>崩れて穴になり</b>、二度と通れません。分かれ道でどちらを選ぶかが、そのまま「どの演算を使うか」の決定になります。行き止まりに入ったら「もどす」か「やり直し」で戻れます。</p>
+    <h4>4. 関門</h4>
+    <p><span class="chip gate">🔒</span> は、書かれた条件（例：<b>kg</b>＝kgを持っている、<b>¬m</b>＝mを含まない、<b>1</b>＝無次元）を満たす手持ちでないと通れません。「どの順番で拾うか」が問われます。</p>
+    <h4>5. 次元距離バー</h4>
+    <p>EXIT の単位と、いまの単位が<b>どれだけズレているか</b>を表します。減る方向に進んでいれば正しい方向です。</p>
+    <h4>なぜ単位で遊ぶのか</h4>
+    <p>物理では、式を忘れても<b>単位を組み立てれば答えの形が分かる</b>ことがあります（次元解析）。「速さを出したいなら m/s だから、距離を時間で割ればいい」——この感覚が身につくと、公式の丸暗記から抜け出せます。</p>
+    <div class="row"><button class="btn primary" id="howto-close">とじる</button></div>
+  </div>
+</div>
+
+<!-- ================= クリア ================= -->
+<div class="modal hidden" id="modal-clear"><div class="box" id="clear-body"></div></div>
+
+<script>
+/* ============================================================
+   単位迷宮 (Dimension Labyrinth) — コアエンジン
+   次元ベクトル演算 / 単位パーサ / 表示 / ゲート判定 / 最短手ソルバ
+   ブラウザとNode.jsの両方で動くように書いてある
+   ============================================================ */
+
+/** 基本次元（このゲームで扱う5つ） */
+var BASE = ['kg', 'm', 's', 'A', 'K'];
+
+/** 次元ベクトル（各基本次元の指数）を作る */
+function vnew(o) {
+  var v = { kg: 0, m: 0, s: 0, A: 0, K: 0 };
+  if (o) for (var i = 0; i < BASE.length; i++) { var d = BASE[i]; if (o[d]) v[d] = o[d]; }
+  return v;
+}
+function vclone(a) { return vnew(a); }
+/** a * (b^k) */
+function vmul(a, b, k) {
+  var r = vclone(a);
+  for (var i = 0; i < BASE.length; i++) { var d = BASE[i]; r[d] += b[d] * k; }
+  return r;
+}
+/** a^k （k=2 なら2乗、k=0.5 なら平方根） */
+function vpow(a, k) {
+  var r = vnew();
+  for (var i = 0; i < BASE.length; i++) { var d = BASE[i]; r[d] = a[d] * k; }
+  return r;
+}
+function veq(a, b) { for (var i = 0; i < BASE.length; i++) { if (a[BASE[i]] !== b[BASE[i]]) return false; } return true; }
+function vzero(a) { for (var i = 0; i < BASE.length; i++) { if (a[BASE[i]] !== 0) return false; } return true; }
+/** 次元距離：目標までの「あとどれだけズレているか」(L1距離) */
+function vdist(a, b) { var s = 0; for (var i = 0; i < BASE.length; i++) { var d = BASE[i]; s += Math.abs(a[d] - b[d]); } return s; }
+function vkey(a) { var t = []; for (var i = 0; i < BASE.length; i++) t.push(a[BASE[i]]); return t.join(','); }
+/** 手持ちの「量」。指数の絶対値の合計。球の大きさに使う */
+function vL1(a) { var t = 0; for (var i = 0; i < BASE.length; i++) t += Math.abs(a[BASE[i]]); return t; }
+function vAllEven(a) { for (var i = 0; i < BASE.length; i++) { if (a[BASE[i]] % 2 !== 0) return false; } return true; }
+
+/** 単位テーブル：記号 -> 次元ベクトル */
+var UNITS = {
+  '1':  vnew({}),
+  kg:   vnew({ kg: 1 }),
+  m:    vnew({ m: 1 }),
+  s:    vnew({ s: 1 }),
+  A:    vnew({ A: 1 }),
+  K:    vnew({ K: 1 }),
+  N:    vnew({ kg: 1, m: 1, s: -2 }),
+  J:    vnew({ kg: 1, m: 2, s: -2 }),
+  W:    vnew({ kg: 1, m: 2, s: -3 }),
+  Pa:   vnew({ kg: 1, m: -1, s: -2 }),
+  Hz:   vnew({ s: -1 }),
+  C:    vnew({ A: 1, s: 1 }),
+  V:    vnew({ kg: 1, m: 2, s: -3, A: -1 }),
+  'Ω':  vnew({ kg: 1, m: 2, s: -3, A: -2 }),
+  ohm:  vnew({ kg: 1, m: 2, s: -3, A: -2 }),
+  F:    vnew({ kg: -1, m: -2, s: 4, A: 2 }),
+  T:    vnew({ kg: 1, s: -2, A: -1 }),
+  Wb:   vnew({ kg: 1, m: 2, s: -2, A: -1 }),
+  H:    vnew({ kg: 1, m: 2, s: -2, A: -2 })
+};
+
+/** 表示に使う「組立単位の記号」（重複はしない順で先勝ち） */
+var NAMED_ORDER = ['N', 'J', 'W', 'Pa', 'Hz', 'C', 'V', 'Ω', 'F', 'T', 'Wb', 'H'];
+var NAMED_BY_KEY = {};
+(function () {
+  for (var i = 0; i < NAMED_ORDER.length; i++) {
+    var sym = NAMED_ORDER[i];
+    var k = vkey(UNITS[sym]);
+    if (!NAMED_BY_KEY[k]) NAMED_BY_KEY[k] = sym;
+  }
+})();
+
+/**
+ * 単位文字列をパースする。例: "kg*m/s^2", "m/s", "J/(kg*K)" は "J/kg/K" と書く
+ */
+function parseUnit(str) {
+  if (str === undefined || str === null || str === '') return vnew();
+  if (typeof str === 'object') return vnew(str);
+  var s = String(str).replace(/\s+/g, '').replace(/·/g, '*').replace(/[()]/g, '');
+  var parts = s.split(/([*\/])/);
+  var v = vnew();
+  var op = '*';
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (p === '*' || p === '/') { op = p; continue; }
+    if (p === '') continue;
+    var mm = p.match(/^([A-Za-zΩ]+|1)(?:\^(-?\d+))?$/);
+    if (!mm) throw new Error('単位を解釈できません: ' + p + ' (' + str + ')');
+    var base = UNITS[mm[1]];
+    if (!base) throw new Error('未知の単位: ' + mm[1]);
+    var e = mm[2] ? parseInt(mm[2], 10) : 1;
+    v = vmul(v, base, (op === '*' ? 1 : -1) * e);
+  }
+  return v;
+}
+
+/** 物理量の名前（次元キー -> 日本語名） */
+var QUANTITY = {};
+(function () {
+  var tbl = [
+    ['1', '無次元'],
+    ['m', '長さ'], ['m^2', '面積'], ['m^3', '体積'],
+    ['kg', '質量'], ['s', '時間'], ['A', '電流'], ['K', '温度'],
+    ['m/s', '速さ'], ['m/s^2', '加速度'],
+    ['kg*m/s', '運動量'], ['kg/m^3', '密度'],
+    ['N', '力'], ['J', 'エネルギー・仕事'], ['W', '仕事率'],
+    ['Pa', '圧力'], ['Hz', '振動数'],
+    ['C', '電気量'], ['V', '電圧'], ['Ω', '電気抵抗'],
+    ['F', '静電容量'], ['T', '磁束密度'], ['Wb', '磁束'], ['H', 'インダクタンス'],
+    ['J/kg/K', '比熱容量'], ['J/K', '熱容量'],
+    ['m^3/kg/s^2', '万有引力定数'], ['J*s', '作用（プランク定数）'],
+    ['N/m', 'ばね定数・表面張力'], ['kg/s', '質量流量'],
+    ['m^2/s^2', '速さの2乗'], ['J/kg', '比エネルギー']
+  ];
+  for (var i = 0; i < tbl.length; i++) {
+    try { QUANTITY[vkey(parseUnit(tbl[i][0]))] = tbl[i][1]; } catch (e) {}
+  }
+})();
+
+function quantityName(v) { return QUANTITY[vkey(v)] || null; }
+
+/** 次元ベクトル -> 表示用HTML（例: kg·m/s²） */
+function unitHTML(v) {
+  var k = vkey(v);
+  if (NAMED_BY_KEY[k]) return NAMED_BY_KEY[k];
+  var num = [], den = [];
+  for (var i = 0; i < BASE.length; i++) {
+    var d = BASE[i], e = v[d];
+    if (e === 0) continue;
+    var a = Math.abs(e);
+    var t = d + (a === 1 ? '' : '<sup>' + a + '</sup>');
+    if (e > 0) num.push(t); else den.push(t);
+  }
+  return joinFrac(num, den);
+}
+
+function joinFrac(num, den) {
+  if (num.length === 0 && den.length === 0) return '1';
+  var ns = num.length ? num.join('·') : '1';
+  if (!den.length) return ns;
+  var ds = den.length > 1 ? '(' + den.join('·') + ')' : den[0];
+  return ns + '/' + ds;
+}
+
+/** 基本単位だけに開いた表示（Nでも kg·m/s² と出す） */
+function unitHTMLBase(v) {
+  var num = [], den = [];
+  for (var i = 0; i < BASE.length; i++) {
+    var d = BASE[i], e = v[d];
+    if (e === 0) continue;
+    var a = Math.abs(e);
+    var t = d + (a === 1 ? '' : '<sup>' + a + '</sup>');
+    if (e > 0) num.push(t); else den.push(t);
+  }
+  return joinFrac(num, den);
+}
+
+function unitText(v) { return unitHTML(v).replace(/<sup>(-?\d+)<\/sup>/g, '^$1'); }
+
+/* ---------------- マス（セル）の判定ルール ---------------- */
+
+/** ゲート条件を判定する */
+function evalCond(hand, c) {
+  switch (c.k) {
+    case 'has':     return hand[c.d] > 0;                 // 指定次元の指数が正
+    case 'neg':     return hand[c.d] < 0;                 // 指定次元の指数が負
+    case 'zero':    return hand[c.d] === 0;               // 指定次元を含まない
+    case 'dimless': return vzero(hand);                   // 無次元
+    case 'eq':      return veq(hand, parseUnit(c.u));     // ちょうどこの単位
+    case 'noneg':   return BASE.every(function (d) { return hand[d] >= 0; });
+    case 'even':    return vAllEven(hand);                // すべての指数が偶数
+    default: return true;
+  }
+}
+function condLabel(c) {
+  switch (c.k) {
+    case 'has':     return c.d + 'を持つ';
+    case 'neg':     return '1/' + c.d + 'を持つ';
+    case 'zero':    return c.d + 'を含まない';
+    case 'dimless': return '無次元';
+    case 'eq':      return 'ちょうど' + c.u;
+    case 'noneg':   return '分母なし';
+    case 'even':    return '全て偶数乗';
+    default: return '?';
+  }
+}
+function condShort(c) {
+  switch (c.k) {
+    case 'has':     return c.d;
+    case 'neg':     return '1/' + c.d;
+    case 'zero':    return '¬' + c.d;
+    case 'dimless': return '1';
+    case 'eq':      return c.u;
+    case 'noneg':   return '+';
+    case 'even':    return '²';
+    default: return '?';
+  }
+}
+
+/** そのマスに入れるか（goalV を渡すと EXIT は単位一致でのみ通れる） */
+function canEnter(hand, cell, goalV) {
+  if (!cell || cell.t === 'wall') return { ok: false, why: 'ここは壁だ' };
+  if (cell.t === 'gate') {
+    return evalCond(hand, cell.cond)
+      ? { ok: true }
+      : { ok: false, why: '関門の条件「' + condLabel(cell.cond) + '」を満たしていない' };
+  }
+  if (cell.t === 'pow' && cell.k === 0.5) {
+    if (!vAllEven(hand)) return { ok: false, why: '√は「すべての指数が偶数」のときしか渡れない' };
+  }
+  if (cell.t === 'goal' && goalV) {
+    if (!veq(hand, goalV)) return { ok: false, why: 'EXIT は単位がぴったり合うまで開かない' };
+  }
+  return { ok: true };
+}
+
+/** そのマスの効果を手持ちに適用する */
+function applyCell(hand, cell) {
+  if (!cell) return hand;
+  if (cell.t === 'op') return vmul(hand, parseUnit(cell.u), cell.op === '*' ? 1 : -1);
+  if (cell.t === 'pow') return vpow(hand, cell.k);
+  return hand;
+}
+
+/** 単位を持っているマスか */
+function isItem(cell) { return !!cell && (cell.t === 'op' || cell.t === 'pow'); }
+
+/* ---------------- ステージの読み込み ---------------- */
+
+/**
+ * grid（文字列配列）+ legend から、セル配列を組み立てる
+ * 既定の記号: '#'=壁 '.'=床 'S'=スタート 'G'=ゴール
+ */
+function buildStage(def) {
+  var rows = def.grid;
+  var h = rows.length, w = 0;
+  for (var i = 0; i < h; i++) w = Math.max(w, rows[i].length);
+  var cells = [], start = null, goal = null;
+  for (var y = 0; y < h; y++) {
+    var row = [];
+    for (var x = 0; x < w; x++) {
+      var ch = rows[y][x] || '#';
+      var cell;
+      if (ch === '#') cell = { t: 'wall' };
+      else if (ch === '.') cell = { t: 'floor' };
+      else if (ch === 'S') { cell = { t: 'start' }; start = { x: x, y: y }; }
+      else if (ch === 'G') { cell = { t: 'goal' }; goal = { x: x, y: y }; }
+      else {
+        var proto = def.legend && def.legend[ch];
+        if (!proto) throw new Error('legendに ' + ch + ' がない (' + def.id + ')');
+        cell = JSON.parse(JSON.stringify(proto));
+      }
+      cell.x = x; cell.y = y;
+      row.push(cell);
+    }
+    cells.push(row);
+  }
+  return {
+    id: def.id, title: def.title, chapter: def.chapter, story: def.story,
+    w: w, h: h, cells: cells, start: start, goal: goal,
+    startV: parseUnit(def.start), goalV: parseUnit(def.goal),
+    startStr: def.start, goalStr: def.goal,
+    tip: def.tip, formula: def.formula, quiz: def.quiz, par: def.par || null
+  };
+}
+
+function cellAt(stage, x, y) {
+  if (x < 0 || y < 0 || x >= stage.w || y >= stage.h) return null;
+  return stage.cells[y][x];
+}
+
+var DIRS = [{ dx: 0, dy: -1, n: '上' }, { dx: 0, dy: 1, n: '下' }, { dx: -1, dy: 0, n: '左' }, { dx: 1, dy: 0, n: '右' }];
+
+/**
+ * 後戻り禁止（一度通ったマスには入れない）のもとで、
+ * 現在地からクリアまでの最短手順を深さ優先＋枝刈りで探す。
+ * state = {x, y, hand, visited:Uint8Array(w*h)}
+ * 戻り値: 方向の配列（['右','右','下',...]）／解けないなら null
+ */
+/**
+ * この状態から「まだクリアの可能性があるか」を安く判定する。
+ * ゴールに到達できるか＋残っているマスで必要な単位を作れるか、だけを見る（甘めの判定）。
+ */
+function feasible(stage, state) {
+  var w = stage.w, h = stage.h, N = w * h;
+  var vis = new Uint8Array(N);
+  if (state.visited) vis.set(state.visited);
+  var goalI = stage.goal.y * w + stage.goal.x;
+  var q = new Int32Array(N), seen = new Uint8Array(N);
+  var head = 0, tail = 0, si = state.y * w + state.x;
+  q[tail++] = si; seen[si] = 1;
+  var plus = { kg: 0, m: 0, s: 0, A: 0, K: 0 }, minus = { kg: 0, m: 0, s: 0, A: 0, K: 0 };
+  var goalOK = false, hasPow = false;
+  while (head < tail) {
+    var i = q[head++], cx = i % w, cy = (i - cx) / w;
+    if (i === goalI) goalOK = true;
+    var c = stage.cells[cy][cx];
+    if (c.t === 'op') {
+      var u = parseUnit(c.u), sg = c.op === '*' ? 1 : -1;
+      for (var k = 0; k < BASE.length; k++) {
+        var d = BASE[k], e = u[d] * sg;
+        if (e > 0) plus[d] += e; else if (e < 0) minus[d] += -e;
+      }
+    } else if (c.t === 'pow') hasPow = true;
+    for (var mm = 0; mm < DIRS.length; mm++) {
+      var nx = cx + DIRS[mm].dx, ny = cy + DIRS[mm].dy;
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      var ni = ny * w + nx;
+      if (seen[ni] || vis[ni]) continue;
+      if (stage.cells[ny][nx].t === 'wall') continue;
+      seen[ni] = 1; q[tail++] = ni;
+    }
+  }
+  if (!goalOK) return false;
+  if (hasPow) return true;
+  for (var j = 0; j < BASE.length; j++) {
+    var dd = BASE[j], need = stage.goalV[dd] - state.hand[dd];
+    if (need > 0 && need > plus[dd]) return false;
+    if (need < 0 && -need > minus[dd]) return false;
+  }
+  return true;
+}
+
+function solve(stage, state, limit) {
+  limit = limit || 300000;
+  var w = stage.w, h = stage.h, N = w * h;
+  var vis = new Uint8Array(N);
+  if (state.visited) vis.set(state.visited);
+  vis[state.y * w + state.x] = 1;
+  var goalI = stage.goal.y * w + stage.goal.x;
+  var best = null, nodes = 0, stopped = false;
+  var stack = [];
+  var q = new Int32Array(N), seen = new Uint8Array(N);
+
+  /** 到達可能性と「残っている単位で目標に届くか」で枝刈り */
+  function hopeless(x, y, hand) {
+    seen.fill(0);
+    var head = 0, tail = 0, si = y * w + x;
+    q[tail++] = si; seen[si] = 1;
+    var plus = { kg: 0, m: 0, s: 0, A: 0, K: 0 }, minus = { kg: 0, m: 0, s: 0, A: 0, K: 0 };
+    var goalOK = false, hasPow = false;
+    while (head < tail) {
+      var i = q[head++], cx = i % w, cy = (i - cx) / w;
+      if (i === goalI) goalOK = true;
+      var c = stage.cells[cy][cx];
+      if (c.t === 'op') {
+        var u = parseUnit(c.u), sg = c.op === '*' ? 1 : -1;
+        for (var k = 0; k < BASE.length; k++) {
+          var d = BASE[k], e = u[d] * sg;
+          if (e > 0) plus[d] += e; else if (e < 0) minus[d] += -e;
+        }
+      } else if (c.t === 'pow') hasPow = true;
+      for (var m = 0; m < DIRS.length; m++) {
+        var nx = cx + DIRS[m].dx, ny = cy + DIRS[m].dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        var ni = ny * w + nx;
+        if (seen[ni] || vis[ni]) continue;
+        if (stage.cells[ny][nx].t === 'wall') continue;
+        seen[ni] = 1; q[tail++] = ni;
+      }
+    }
+    if (!goalOK) return true;
+    if (!hasPow) {
+      for (var j = 0; j < BASE.length; j++) {
+        var dd = BASE[j], need = stage.goalV[dd] - hand[dd];
+        if (need > 0 && need > plus[dd]) return true;
+        if (need < 0 && -need > minus[dd]) return true;
+      }
+    }
+    return false;
+  }
+
+  function dfs(x, y, hand) {
+    if (stopped) return;
+    if (++nodes > limit) { stopped = true; return; }
+    if (x === stage.goal.x && y === stage.goal.y) {
+      if (veq(hand, stage.goalV) && (!best || stack.length < best.length)) best = stack.slice();
+      return;                                  // EXIT に入ったら終わり
+    }
+    if (best && stack.length + 1 >= best.length) return;
+    if (hopeless(x, y, hand)) return;
+    for (var i = 0; i < DIRS.length; i++) {
+      var nx = x + DIRS[i].dx, ny = y + DIRS[i].dy;
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      var ni = ny * w + nx;
+      if (vis[ni]) continue;
+      var cell = stage.cells[ny][nx];
+      if (cell.t === 'wall') continue;
+      if (!canEnter(hand, cell, stage.goalV).ok) continue;
+      vis[ni] = 1; stack.push(DIRS[i].n);
+      dfs(nx, ny, applyCell(hand, cell));
+      stack.pop(); vis[ni] = 0;
+      if (stopped) return;
+    }
+  }
+  dfs(state.x, state.y, state.hand);
+  return best;
+}
+
+/* Node.js から使えるように */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    BASE: BASE, vnew: vnew, vmul: vmul, vpow: vpow, veq: veq, vzero: vzero, vdist: vdist,
+    vkey: vkey, parseUnit: parseUnit, unitHTML: unitHTML, unitHTMLBase: unitHTMLBase, unitText: unitText,
+    quantityName: quantityName, evalCond: evalCond, condLabel: condLabel, condShort: condShort,
+    canEnter: canEnter, applyCell: applyCell, isItem: isItem, vL1: vL1, vAllEven: vAllEven,
+    buildStage: buildStage, cellAt: cellAt, solve: solve, feasible: feasible, UNITS: UNITS, DIRS: DIRS
+  };
+}
+
+</script>
+<script>
+/* ============================================================
+   単位迷宮 — ステージデータ
+   tools/make-stages.js が tools/specs.js（教育的な中身）と
+   tools/gen.js（迷路生成）から自動生成したもの。手で書き換えないこと。
+   すべてのステージは「後戻り禁止」ソルバで解けることを確認済み。
+   ============================================================ */
+var STAGE_DEFS = [
+{
+  id: "1-1", chapter: "第1章 力学の単位", title: "よけいなものを捨てる",
+  story: "一度通った道は崩れて戻れない。まずは持っている m を捨てて EXIT へ。",
+  start: "m", goal: "1", par: 12,
+  grid: [
+    "#######",
+    "#S#..b#",
+    "#.#c#.#",
+    "#.#...#",
+    "#.#a#.#",
+    "#...#G#",
+    "#######"
+  ],
+  legend: {
+    a: {"t":"op","op":"/","u":"m"},
+    b: {"t":"op","op":"*","u":"m"},
+    c: {"t":"op","op":"*","u":"m"}
+  },
+  tip: "÷m を踏むと m が1つ減る。m ÷ m = 1（無次元）。",
+  formula: "m ÷ m = 1",
+  quiz: {"q":"「無次元」の量はどれ？","choices":["速さ","摩擦係数","加速度","力"],"ans":1,"exp":"摩擦係数 μ は 力÷力 なので単位が消える。無次元量は単位を持たない。"}
+},
+{
+  id: "1-2", chapter: "第1章 力学の単位", title: "速さをつくる",
+  story: "速さ = 距離 ÷ 時間。分かれ道はどれも一度きり。選ぶ前に考えよう。",
+  start: "m", goal: "m/s", par: 14,
+  grid: [
+    "#########",
+    "#S#db...#",
+    "#.#.###.#",
+    "#...#...#",
+    "#.#.#.#.#",
+    "#.c..a#G#",
+    "#########"
+  ],
+  legend: {
+    a: {"t":"op","op":"/","u":"s"},
+    b: {"t":"op","op":"/","u":"kg"},
+    c: {"t":"op","op":"*","u":"kg"},
+    d: {"t":"op","op":"*","u":"kg"}
+  },
+  tip: "「速さ」は m/s。距離を時間で割る、つまり ÷s。",
+  formula: "v = x / t  →  m / s",
+  quiz: {"q":"m/s をもう一度「÷s」で割ると何になる？","choices":["速さ","加速度","力","距離"],"ans":1,"exp":"m/s ÷ s = m/s²。これは加速度の単位。"}
+},
+{
+  id: "1-3", chapter: "第1章 力学の単位", title: "力をつくる",
+  story: "F = ma。質量 kg から、力 N をつくれ。N = kg·m/s² だ。",
+  start: "kg", goal: "N", par: 14,
+  grid: [
+    "###########",
+    "#S...a..#.#",
+    "###.###.#.#",
+    "#..d..eb..#",
+    "#.###.#.#c#",
+    "#.....#...#",
+    "#f#####.#.#",
+    "#h.g....#G#",
+    "###########"
+  ],
+  legend: {
+    a: {"t":"op","op":"*","u":"m"},
+    b: {"t":"op","op":"/","u":"s"},
+    c: {"t":"op","op":"/","u":"s"},
+    d: {"t":"op","op":"*","u":"kg"},
+    e: {"t":"op","op":"*","u":"m"},
+    f: {"t":"op","op":"*","u":"kg"},
+    g: {"t":"op","op":"*","u":"kg"},
+    h: {"t":"op","op":"/","u":"m"}
+  },
+  tip: "N = kg·m/s²。kg に「×m」を1回、「÷s」を2回。",
+  formula: "F = ma  →  N = kg · m/s²",
+  quiz: {"q":"1 N はどれと同じ？","choices":["kg·m/s","kg·m/s²","kg·m²/s²","kg/s²"],"ans":1,"exp":"F = ma の右辺は kg × m/s² = kg·m/s²。"}
+},
+{
+  id: "1-4", chapter: "第1章 力学の単位", title: "関門をひらく",
+  story: "関門（🔒）は条件を満たす単位でないと通れない。速さ m/s から仕事 J をつくれ。",
+  start: "m/s", goal: "J", par: 18,
+  grid: [
+    "###########",
+    "#S........#",
+    "###h#.#a###",
+    "#.b.....ej#",
+    "#.###.###g#",
+    "#.#..d....#",
+    "#.#.###.#.#",
+    "#c..#.if.G#",
+    "###########"
+  ],
+  legend: {
+    a: {"t":"op","op":"*","u":"kg"},
+    b: {"t":"op","op":"*","u":"m"},
+    c: {"t":"gate","cond":{"k":"has","d":"kg"}},
+    d: {"t":"op","op":"/","u":"s"},
+    e: {"t":"op","op":"*","u":"s"},
+    f: {"t":"op","op":"*","u":"m"},
+    g: {"t":"op","op":"/","u":"m"},
+    h: {"t":"op","op":"/","u":"m"},
+    i: {"t":"op","op":"*","u":"m"},
+    j: {"t":"op","op":"*","u":"m"}
+  },
+  tip: "J = kg·m²/s²。関門の条件を満たす順番で拾おう。",
+  formula: "W = Fx  →  J = N·m = kg·m²/s²",
+  quiz: {"q":"1 J はどれと同じ？","choices":["N·m","N/m","N·s","N/s"],"ans":0,"exp":"仕事 = 力 × 距離 なので J = N·m。"}
+},
+{
+  id: "2-1", chapter: "第2章 相殺と関門", title: "相殺のコツ",
+  story: "同じ単位を掛けて割れば、単位は消える（相殺）。J から仕事率 W へ。",
+  start: "J", goal: "W", par: 24,
+  grid: [
+    "###########",
+    "#S...g.k#f#",
+    "###.###.#.#",
+    "#....e#h..#",
+    "#a#i#####.#",
+    "#...#..d..#",
+    "#.#.#.#.#.#",
+    "#.b.......#",
+    "#.###.#j#.#",
+    "#....c..#G#",
+    "###########"
+  ],
+  legend: {
+    a: {"t":"op","op":"/","u":"kg"},
+    b: {"t":"op","op":"*","u":"kg"},
+    c: {"t":"gate","cond":{"k":"has","d":"kg"}},
+    d: {"t":"op","op":"/","u":"s"},
+    e: {"t":"op","op":"/","u":"m"},
+    f: {"t":"op","op":"*","u":"kg"},
+    g: {"t":"op","op":"*","u":"m"},
+    h: {"t":"op","op":"*","u":"kg"},
+    i: {"t":"op","op":"*","u":"m"},
+    j: {"t":"op","op":"*","u":"m"},
+    k: {"t":"op","op":"*","u":"m"}
+  },
+  tip: "W = J/s。途中で kg を手放して関門をくぐり、あとで拾い直す。",
+  formula: "P = W / t  →  W = J/s = kg·m²/s³",
+  quiz: {"q":"1 W はどれと同じ？","choices":["J·s","J/s","N·s","N/m"],"ans":1,"exp":"仕事率 = 仕事 ÷ 時間 なので W = J/s。"}
+},
+{
+  id: "2-2", chapter: "第2章 相殺と関門", title: "圧力の迷宮",
+  story: "力 N から圧力 Pa をつくれ。Pa = N/m²。",
+  start: "N", goal: "Pa", par: 28,
+  grid: [
+    "#############",
+    "#Sh....df...#",
+    "#.#c#.#.#g#.#",
+    "#.....l.#.#.#",
+    "#.###.#.###i#",
+    "#.j.b.#.e.#.#",
+    "#.#.###.#.#.#",
+    "#a.....k...G#",
+    "#############"
+  ],
+  legend: {
+    a: {"t":"op","op":"/","u":"m"},
+    b: {"t":"op","op":"*","u":"s"},
+    c: {"t":"gate","cond":{"k":"zero","d":"m"}},
+    d: {"t":"op","op":"/","u":"m"},
+    e: {"t":"op","op":"/","u":"s"},
+    f: {"t":"op","op":"*","u":"kg"},
+    g: {"t":"op","op":"*","u":"s"},
+    h: {"t":"op","op":"*","u":"m"},
+    i: {"t":"op","op":"*","u":"s"},
+    j: {"t":"op","op":"*","u":"s"},
+    k: {"t":"op","op":"/","u":"kg"},
+    l: {"t":"op","op":"*","u":"kg"}
+  },
+  tip: "Pa = N/m²。÷m が2回。途中の ×s と ÷s は相殺する。",
+  formula: "p = F / S  →  Pa = N/m² = kg/(m·s²)",
+  quiz: {"q":"1 Pa はどれと同じ？","choices":["N·m²","N/m²","N/m","N·m"],"ans":1,"exp":"圧力 = 力 ÷ 面積 なので Pa = N/m²。"}
+},
+{
+  id: "2-3", chapter: "第2章 相殺と関門", title: "無次元へ帰れ",
+  story: "力 N から、すべての単位を消し去れ。球が消えたら勝ちだ。",
+  start: "N", goal: "1", par: 36,
+  grid: [
+    "#############",
+    "#S#......d..#",
+    "#.#####.#j#.#",
+    "#.#...c..e..#",
+    "#.#.###l#.###",
+    "#.g.b.#.#...#",
+    "#.#f#.#.#i#.#",
+    "#.a...k...hG#",
+    "#############"
+  ],
+  legend: {
+    a: {"t":"op","op":"/","u":"kg"},
+    b: {"t":"op","op":"/","u":"m"},
+    c: {"t":"gate","cond":{"k":"zero","d":"m"}},
+    d: {"t":"op","op":"*","u":"s"},
+    e: {"t":"op","op":"*","u":"s"},
+    f: {"t":"op","op":"*","u":"m"},
+    g: {"t":"op","op":"/","u":"s"},
+    h: {"t":"op","op":"*","u":"m"},
+    i: {"t":"op","op":"*","u":"kg"},
+    j: {"t":"op","op":"*","u":"s"},
+    k: {"t":"op","op":"*","u":"kg"},
+    l: {"t":"op","op":"*","u":"m"}
+  },
+  tip: "N = kg·m/s²。kg を1つ、m を1つ消し、s を2つ掛ければ無次元。",
+  formula: "摩擦係数 μ = F / N → N/N = 1（無次元）",
+  quiz: {"q":"次のうち無次元でないものは？","choices":["屈折率","ひずみ","マッハ数","運動量"],"ans":3,"exp":"運動量は kg·m/s。屈折率・ひずみ・マッハ数はどれも「同じ単位どうしの比」で無次元。"}
+},
+{
+  id: "2-4", chapter: "第2章 相殺と関門", title: "長い道のり",
+  story: "質量 kg だけを持って出発。関門は2つ。エネルギー J にたどり着け。",
+  start: "kg", goal: "J", par: 40,
+  grid: [
+    "#############",
+    "#S......g...#",
+    "###.#f#n#.#.#",
+    "#.a.#.#.o..h#",
+    "#.###.#####.#",
+    "#.#lk.e...#.#",
+    "#.#j#.#m#.#.#",
+    "#b...c...diG#",
+    "#############"
+  ],
+  legend: {
+    a: {"t":"op","op":"*","u":"m"},
+    b: {"t":"op","op":"*","u":"s"},
+    c: {"t":"gate","cond":{"k":"has","d":"m"}},
+    d: {"t":"op","op":"/","u":"s"},
+    e: {"t":"op","op":"*","u":"m"},
+    f: {"t":"gate","cond":{"k":"has","d":"m"}},
+    g: {"t":"op","op":"/","u":"s"},
+    h: {"t":"op","op":"/","u":"s"},
+    i: {"t":"op","op":"*","u":"kg"},
+    j: {"t":"op","op":"/","u":"kg"},
+    k: {"t":"op","op":"/","u":"kg"},
+    l: {"t":"op","op":"/","u":"m"},
+    m: {"t":"op","op":"/","u":"kg"},
+    n: {"t":"op","op":"/","u":"kg"},
+    o: {"t":"op","op":"*","u":"s"}
+  },
+  tip: "J = kg·m²/s²。×m が2回、÷s が2回。途中の ×s と ÷s は相殺する。",
+  formula: "E = ½mv²  →  kg · (m/s)² = kg·m²/s²",
+  quiz: {"q":"運動エネルギー ½mv² の単位を組み立てると？","choices":["kg·m/s","kg·m²/s²","kg·m²/s³","kg/(m·s²)"],"ans":1,"exp":"kg × (m/s)² = kg·m²/s² = J。"}
+},
+{
+  id: "3-1", chapter: "第3章 電気・熱・累乗", title: "電気量をためる",
+  story: "電流 A から電気量 C をつくれ。Q = It。",
+  start: "A", goal: "C", par: 32,
+  grid: [
+    "###########",
+    "#S...hg...#",
+    "#.#.#####j#",
+    "#.i.....d.#",
+    "###.#.#.#.#",
+    "#.#..a#.k.#",
+    "#.#.#.#.#.#",
+    "#.....#.e.#",
+    "#b#f#.#.#.#",
+    "#......c.G#",
+    "###########"
+  ],
+  legend: {
+    a: {"t":"op","op":"*","u":"m"},
+    b: {"t":"op","op":"*","u":"s"},
+    c: {"t":"gate","cond":{"k":"has","d":"m"}},
+    d: {"t":"op","op":"/","u":"m"},
+    e: {"t":"op","op":"/","u":"s"},
+    f: {"t":"op","op":"/","u":"A"},
+    g: {"t":"op","op":"/","u":"A"},
+    h: {"t":"op","op":"/","u":"A"},
+    i: {"t":"op","op":"*","u":"m"},
+    j: {"t":"op","op":"/","u":"A"},
+    k: {"t":"op","op":"/","u":"A"}
+  },
+  tip: "C = A·s。途中で拾う ×m と ÷m は相殺するので気にしなくてよい。",
+  formula: "Q = It  →  C = A·s",
+  quiz: {"q":"1 C はどれと同じ？","choices":["A/s","A·s","A·s²","A/s²"],"ans":1,"exp":"電気量 = 電流 × 時間 なので C = A·s。"}
+},
+{
+  id: "3-2", chapter: "第3章 電気・熱・累乗", title: "電圧をつくる",
+  story: "V = J/C。エネルギー J から電圧 V へ。C は A·s だ。",
+  start: "J", goal: "V", par: 26,
+  grid: [
+    "#############",
+    "#S..#k....gj#",
+    "###.#f#.#.#.#",
+    "#m#...#.....#",
+    "#.#.###d#.#e#",
+    "#...a.#.#.#.#",
+    "#.###.#.#.#.#",
+    "#.i.#....c#.#",
+    "#l###.#.#.#.#",
+    "#....b....hG#",
+    "#############"
+  ],
+  legend: {
+    a: {"t":"op","op":"/","u":"A"},
+    b: {"t":"op","op":"*","u":"kg"},
+    c: {"t":"gate","cond":{"k":"neg","d":"A"}},
+    d: {"t":"op","op":"/","u":"kg"},
+    e: {"t":"op","op":"/","u":"s"},
+    f: {"t":"op","op":"/","u":"m"},
+    g: {"t":"op","op":"*","u":"A"},
+    h: {"t":"op","op":"*","u":"s"},
+    i: {"t":"op","op":"*","u":"s"},
+    j: {"t":"op","op":"*","u":"A"},
+    k: {"t":"op","op":"*","u":"A"},
+    l: {"t":"op","op":"*","u":"A"},
+    m: {"t":"op","op":"*","u":"s"}
+  },
+  tip: "V = J/C = J/(A·s)。÷A と ÷s。×kg と ÷kg は相殺する。",
+  formula: "V = W / Q  →  V = J/C = kg·m²/(s³·A)",
+  quiz: {"q":"1 V はどれと同じ？","choices":["J·C","J/C","C/J","J/A"],"ans":1,"exp":"電圧は「1 C あたりのエネルギー」なので V = J/C。"}
+},
+{
+  id: "3-3", chapter: "第3章 電気・熱・累乗", title: "比熱の谷",
+  story: "比熱容量は「1 kg を1 K あげるのに必要なエネルギー」。J から J/(kg·K) へ。",
+  start: "J", goal: "J/kg/K", par: 26,
+  grid: [
+    "#############",
+    "#S..#k....gj#",
+    "###.#f#.#.#.#",
+    "#m#...#.....#",
+    "#.#.###d#.#e#",
+    "#...a.#.#.#.#",
+    "#.###.#.#.#.#",
+    "#.i.#....c#.#",
+    "#l###.#.#.#.#",
+    "#....b....hG#",
+    "#############"
+  ],
+  legend: {
+    a: {"t":"op","op":"/","u":"kg"},
+    b: {"t":"op","op":"*","u":"m"},
+    c: {"t":"gate","cond":{"k":"zero","d":"kg"}},
+    d: {"t":"op","op":"/","u":"m"},
+    e: {"t":"op","op":"/","u":"K"},
+    f: {"t":"op","op":"*","u":"s"},
+    g: {"t":"op","op":"*","u":"K"},
+    h: {"t":"op","op":"*","u":"kg"},
+    i: {"t":"op","op":"*","u":"kg"},
+    j: {"t":"op","op":"*","u":"K"},
+    k: {"t":"op","op":"*","u":"K"},
+    l: {"t":"op","op":"*","u":"K"},
+    m: {"t":"op","op":"*","u":"kg"}
+  },
+  tip: "J/(kg·K) = m²/(s²·K)。÷kg と ÷K。×m と ÷m は相殺する。",
+  formula: "Q = mcΔT  →  c = Q/(mΔT) = J/(kg·K)",
+  quiz: {"q":"比熱容量の単位はどれ？","choices":["J·kg·K","J/(kg·K)","J/K","J·K/kg"],"ans":1,"exp":"Q = mcΔT を c について解くと c = Q/(mΔT)。単位は J/(kg·K)。"}
+},
+{
+  id: "3-4", chapter: "第3章 電気・熱・累乗", title: "√の橋",
+  story: "v = √(2gh)。√の橋は、すべての指数が偶数のときしか渡れない。",
+  start: "m/s^2", goal: "m/s", par: 30,
+  grid: [
+    "#############",
+    "#S..#..kg...#",
+    "#.#.###f#j#.#",
+    "#.....#.c...#",
+    "#.#.#.#.#.#.#",
+    "#a..#.#.#.d.#",
+    "#.###.#.#.###",
+    "#....b......#",
+    "#.#.#######.#",
+    "#......eih.G#",
+    "#############"
+  ],
+  legend: {
+    a: {"t":"op","op":"*","u":"s"},
+    b: {"t":"op","op":"*","u":"m"},
+    c: {"t":"op","op":"/","u":"s"},
+    d: {"t":"pow","k":0.5},
+    e: {"t":"op","op":"*","u":"s"},
+    f: {"t":"op","op":"/","u":"m"},
+    g: {"t":"op","op":"*","u":"kg"},
+    h: {"t":"op","op":"*","u":"kg"},
+    i: {"t":"op","op":"*","u":"m"},
+    j: {"t":"op","op":"/","u":"m"},
+    k: {"t":"op","op":"*","u":"m"}
+  },
+  tip: "√ は指数を半分にする。渡る直前に m²/s²（全部偶数乗）にしておくこと。",
+  formula: "v = √(2gh)  →  √(m/s² · m) = √(m²/s²) = m/s",
+  quiz: {"q":"√(m²/s²) は？","choices":["m/s","m²/s","m/s²","m"],"ans":0,"exp":"平方根は指数を半分にする：m² → m、s⁻² → s⁻¹。"}
+},
+{
+  id: "3-5", chapter: "第3章 電気・熱・累乗", title: "万有引力定数",
+  story: "最終問題。F = GMm/r² より G = Fr²/(Mm)。力 N から G の単位をつくれ。",
+  start: "N", goal: "m^3/kg/s^2", par: 38,
+  grid: [
+    "#############",
+    "#S..j.......#",
+    "#.#i#.#p#.#l#",
+    "#.k..f...g..#",
+    "#.#.#####.#o#",
+    "#.#e....#..n#",
+    "#a#####d#.#m#",
+    "#...b.#.#h#.#",
+    "#.#.#.#.#.#q#",
+    "#...#.c.#..G#",
+    "#############"
+  ],
+  legend: {
+    a: {"t":"op","op":"*","u":"m"},
+    b: {"t":"op","op":"/","u":"kg"},
+    c: {"t":"gate","cond":{"k":"zero","d":"kg"}},
+    d: {"t":"op","op":"*","u":"s"},
+    e: {"t":"op","op":"/","u":"s"},
+    f: {"t":"gate","cond":{"k":"zero","d":"kg"}},
+    g: {"t":"op","op":"*","u":"m"},
+    h: {"t":"op","op":"/","u":"kg"},
+    i: {"t":"op","op":"*","u":"s"},
+    j: {"t":"op","op":"/","u":"m"},
+    k: {"t":"op","op":"/","u":"s"},
+    l: {"t":"op","op":"/","u":"s"},
+    m: {"t":"op","op":"*","u":"s"},
+    n: {"t":"op","op":"*","u":"s"},
+    o: {"t":"op","op":"*","u":"kg"},
+    p: {"t":"op","op":"*","u":"kg"},
+    q: {"t":"op","op":"*","u":"s"}
+  },
+  tip: "G の単位は N·m²/kg² = m³/(kg·s²)。×m を2回、÷kg を2回。",
+  formula: "F = GMm/r²  →  G = N·m²/kg² = m³/(kg·s²)",
+  quiz: {"q":"万有引力定数 G の単位は？","choices":["N·m²/kg²","N·kg²/m²","N·m/kg","N/(m²·kg)"],"ans":0,"exp":"F = GMm/r² を G について解くと G = Fr²/(Mm) → N·m²/kg²。"}
+}
+];
+
+if (typeof module !== 'undefined' && module.exports) module.exports = STAGE_DEFS;
+
+</script>
+<script>
+/* ============================================================
+   単位迷宮 — 3D描画エンジン
+   外部ライブラリなし。Canvas 2D に自前の透視投影で迷路を描く。
+   ============================================================ */
+var R3 = (function () {
+  'use strict';
+
+  var cv, ctx, W = 0, H = 0, dpr = 1;
+  var WALLH = 0.70;
+  var P = { sin: 0, cos: 0, C: { x: 0, y: 0, z: 0 }, scale: 1, ox: 0, oy: 0, rot: 0 };
+  var quads = [];
+  var fx = [];
+
+  var COL = {
+    sky1: '#7FCDF0', sky2: '#CDEEFF',
+    grass: '#3FA83F', grassEdge: '#7A5C3A',
+    wallTop: '#CE9455', wallS: '#A56B37', wallN: '#8A5730', wallE: '#966032', wallW: '#7E4E2A',
+    pit: '#4A3B2C', pitTop: '#5C4A38',
+    gateLock: '#E04B4B', gateOpen: '#43A047',
+    goal: '#17A398', goalTop: '#26C6BA',
+    start: '#EFE2C0'
+  };
+  // 演算マスの色相（球体の色）
+  var HUE = { mul: 268, div: 335, pow: 200 };
+
+  function setCanvas(c) { cv = c; ctx = c.getContext('2d'); }
+  function resize() {
+    if (!cv) return;
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    var r = cv.getBoundingClientRect();
+    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  /* ---------- 投影 ---------- */
+  function raw(X, Y, Z) {
+    var vx = X - P.C.x, vy = Y - P.C.y, vz = Z - P.C.z;
+    var d = -vy * P.sin - vz * P.cos;
+    if (d < 0.05) d = 0.05;
+    return { x: vx / d, y: -(vy * P.cos - vz * P.sin) / d, d: d };
+  }
+  function pr(X, Y, Z) {
+    var r = raw(X, Y, Z);
+    return { x: r.x * P.scale + P.ox, y: r.y * P.scale + P.oy, d: r.d, s: P.scale / r.d };
+  }
+  // 盤面が縦長画面に収まりやすいよう、必要なら90度回して配置する
+  function cellX(st, col, row) { return P.rot ? (row - (st.h - 1) / 2) : (col - (st.w - 1) / 2); }
+  function cellZ(st, col, row) { return P.rot ? (col - (st.w - 1) / 2) : (row - (st.h - 1) / 2); }
+  function halfX(st) { return P.rot ? st.h / 2 : st.w / 2; }
+  function halfZ(st) { return P.rot ? st.w / 2 : st.h / 2; }
+  /** 画面方向(dx,dy) → 迷路の(col,row)方向 */
+  function mapDir(sdx, sdy) { return P.rot ? [sdy, sdx] : [sdx, sdy]; }
+
+  function fitFor(st, rot) {
+    P.rot = rot;
+    var hx = halfX(st), hz = halfZ(st);
+    var pitch = 56 * Math.PI / 180;
+    var D = Math.max(hx, hz) * 2.5 + 4;
+    P.sin = Math.sin(pitch); P.cos = Math.cos(pitch);
+    P.C = { x: 0, y: D * P.sin, z: 0.3 + D * P.cos };
+    P.scale = 1; P.ox = 0; P.oy = 0;
+    var minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+    for (var i = 0; i < 8; i++) {
+      var q = raw((i & 1) ? hx : -hx, (i & 2) ? WALLH : 0, (i & 4) ? hz : -hz);
+      if (q.x < minx) minx = q.x; if (q.x > maxx) maxx = q.x;
+      if (q.y < miny) miny = q.y; if (q.y > maxy) maxy = q.y;
+    }
+    var padX = W * 0.05, padTop = H * 0.09, padBot = H * 0.18;
+    var sc = Math.min((W - padX * 2) / (maxx - minx), (H - padTop - padBot) / (maxy - miny));
+    return { sc: sc, minx: minx, maxx: maxx, miny: miny, maxy: maxy, padTop: padTop, padBot: padBot, C: P.C, sin: P.sin, cos: P.cos };
+  }
+  function setupCamera(st) {
+    var a = fitFor(st, 0), b = fitFor(st, 1);
+    var best = b.sc > a.sc ? b : a;
+    P.rot = (best === b) ? 1 : 0;
+    P.sin = best.sin; P.cos = best.cos; P.C = best.C; P.scale = best.sc;
+    P.ox = W / 2 - (best.minx + best.maxx) / 2 * P.scale;
+    P.oy = best.padTop + (H - best.padTop - best.padBot) / 2 - (best.miny + best.maxy) / 2 * P.scale;
+  }
+
+  /* ---------- 図形 ---------- */
+  function quad(a, b, c, d, fill) {
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  }
+  function corners(st, col, row, y, r) {
+    var X = cellX(st, col, row), Z = cellZ(st, col, row);
+    return { nw: pr(X - r, y, Z - r), ne: pr(X + r, y, Z - r), se: pr(X + r, y, Z + r), sw: pr(X - r, y, Z + r) };
+  }
+  function box(st, col, row, y0, y1, cTop, cS, cN, cE, cW) {
+    var b = corners(st, col, row, y0, 0.5), t = corners(st, col, row, y1, 0.5);
+    var faces = [
+      { p: [t.sw, t.se, b.se, b.sw], c: cS, d: (t.sw.d + t.se.d) / 2 },
+      { p: [t.ne, t.nw, b.nw, b.ne], c: cN, d: (t.ne.d + t.nw.d) / 2 },
+      { p: [t.se, t.ne, b.ne, b.se], c: cE, d: (t.se.d + t.ne.d) / 2 },
+      { p: [t.nw, t.sw, b.sw, b.nw], c: cW, d: (t.nw.d + t.sw.d) / 2 }
+    ];
+    faces.sort(function (a2, b2) { return b2.d - a2.d; });
+    for (var i = 0; i < 4; i++) quad(faces[i].p[0], faces[i].p[1], faces[i].p[2], faces[i].p[3], faces[i].c);
+    quad(t.nw, t.ne, t.se, t.sw, cTop);
+  }
+  function plate(st, col, row, color, inset, y) {
+    var c = corners(st, col, row, y === undefined ? 0.02 : y, 0.5 - (inset === undefined ? 0.08 : inset));
+    quad(c.nw, c.ne, c.se, c.sw, color);
+  }
+  /** 通った跡：地面が崩れて穴になる（もう戻れないことを見た目で伝える） */
+  function pit(st, col, row) {
+    var top = corners(st, col, row, 0, 0.5), bot = corners(st, col, row, -0.34, 0.5);
+    quad(top.sw, top.se, bot.se, bot.sw, COL.pit);
+    quad(top.se, top.ne, bot.ne, bot.se, '#3E3125');
+    quad(top.nw, top.sw, bot.sw, bot.nw, '#3E3125');
+    quad(bot.nw, bot.ne, bot.se, bot.sw, '#2E241A');
+    ctx.save(); ctx.globalAlpha = .5; ctx.strokeStyle = '#8A6B4A'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(top.nw.x, top.nw.y); ctx.lineTo(top.ne.x, top.ne.y);
+    ctx.lineTo(top.se.x, top.se.y); ctx.lineTo(top.sw.x, top.sw.y); ctx.closePath(); ctx.stroke(); ctx.restore();
+  }
+
+  /* ---------- 半透明の球 ---------- */
+  function sphere(pt, rWorld, hue, alpha, sat) {
+    var r = Math.max(3, pt.s * rWorld);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    var g = ctx.createRadialGradient(pt.x - r * 0.34, pt.y - r * 0.40, r * 0.08, pt.x, pt.y, r);
+    g.addColorStop(0, 'hsla(' + hue + ',100%,96%,1)');
+    g.addColorStop(0.40, 'hsla(' + hue + ',' + (sat || 88) + '%,72%,.92)');
+    g.addColorStop(0.86, 'hsla(' + hue + ',' + (sat || 88) + '%,52%,.62)');
+    g.addColorStop(1, 'hsla(' + hue + ',' + (sat || 88) + '%,44%,.30)');
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, 6.2832); ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = Math.max(1, r * 0.10);
+    ctx.strokeStyle = 'hsla(' + hue + ',100%,90%,.85)'; ctx.stroke();
+    ctx.globalAlpha = alpha * 0.95;
+    ctx.beginPath();
+    ctx.ellipse(pt.x - r * 0.32, pt.y - r * 0.38, r * 0.27, r * 0.17, -0.6, 0, 6.2832);
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+    ctx.restore();
+  }
+  function halo(pt, rWorld, color) {
+    var r = pt.s * rWorld;
+    var g = ctx.createRadialGradient(pt.x, pt.y, r * 0.35, pt.x, pt.y, r);
+    g.addColorStop(0, color); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.save(); ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, 6.2832); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+  }
+  function groundShadow(pt, rWorld, a) {
+    ctx.save(); ctx.globalAlpha = a === undefined ? 0.22 : a; ctx.fillStyle = '#1b3a1b';
+    ctx.beginPath(); ctx.ellipse(pt.x, pt.y, pt.s * rWorld, pt.s * rWorld * 0.5, 0, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+  function bigText(x, y, text, fs, fill, outline) {
+    ctx.font = '800 ' + fs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = Math.max(2.5, fs * 0.3); ctx.strokeStyle = outline || 'rgba(40,50,40,.9)';
+    ctx.lineJoin = 'round'; ctx.strokeText(text, x, y);
+    ctx.fillStyle = fill; ctx.fillText(text, x, y);
+  }
+
+  /* ---------- 単位の文字 ---------- */
+  var SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '-': '⁻' };
+  function sup(str) {
+    return String(str).replace(/\^(-?\d+)/g, function (m, gg) {
+      return gg.split('').map(function (ch) { return SUP[ch] || ch; }).join('');
+    });
+  }
+  function uniStr(v) { return sup(unitText(v)); }
+  function tileLabel(c) {
+    if (c.t === 'op') return (c.op === '*' ? '×' : '÷') + sup(c.u);
+    if (c.t === 'pow') return c.k === 0.5 ? '√' : '²';
+    return '';
+  }
+
+  /* ---------- エフェクト ---------- */
+  function addFX(o) { o.t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now()); fx.push(o); }
+  function hasFX() { return fx.length > 0; }
+  function drawFX(now) {
+    for (var i = fx.length - 1; i >= 0; i--) {
+      var f = fx[i], t = (now - f.t0) / f.dur;
+      if (t >= 1) { fx.splice(i, 1); continue; }
+      var p = pr(f.X, f.Y, f.Z);
+      ctx.save();
+      if (f.k === 'ring') {
+        ctx.globalAlpha = (1 - t) * 0.9;
+        ctx.lineWidth = Math.max(2, p.s * 0.09 * (1 - t) + 1);
+        ctx.strokeStyle = f.color;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.s * (f.r0 + (f.r1 - f.r0) * t), p.s * (f.r0 + (f.r1 - f.r0) * t) * 0.55, 0, 0, 6.2832);
+        ctx.stroke();
+      } else if (f.k === 'burst') {
+        ctx.globalAlpha = 1 - t;
+        ctx.fillStyle = f.color;
+        for (var j = 0; j < f.n; j++) {
+          var a = (j / f.n) * 6.2832 + f.seed;
+          var rr = p.s * (0.18 + 0.75 * t);
+          var px = p.x + Math.cos(a) * rr, py = p.y + Math.sin(a) * rr * 0.55 - p.s * 0.5 * t;
+          var sz = Math.max(1, p.s * 0.09 * (1 - t));
+          ctx.beginPath(); ctx.arc(px, py, sz, 0, 6.2832); ctx.fill();
+        }
+      } else if (f.k === 'text') {
+        ctx.globalAlpha = t < 0.75 ? 1 : (1 - t) * 4;
+        bigText(p.x, p.y - p.s * 0.9 * t, f.s, Math.max(12, Math.min(30, p.s * 0.36)), f.color, 'rgba(30,30,30,.85)');
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ---------- メイン描画 ---------- */
+  function draw(st, S) {
+    if (!ctx) return;
+    quads = [];
+    var labels = [], blockers = [];
+    var now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    var bob = Math.sin(now / 420) * 0.045;
+
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, COL.sky1); g.addColorStop(1, COL.sky2);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    var gx = halfX(st), gz = halfZ(st);
+    quad(pr(-gx, 0, -gz), pr(gx, 0, -gz), pr(gx, 0, gz), pr(-gx, 0, gz), COL.grass);
+    quad(pr(-gx, 0, gz), pr(gx, 0, gz), pr(gx, -0.55, gz), pr(-gx, -0.55, gz), COL.grassEdge);
+
+    var ready = veq(S.hand, st.goalV);
+
+    for (var row = 0; row < st.h; row++) {
+      for (var col = 0; col < st.w; col++) {
+        var c = st.cells[row][col];
+        if (c.t === 'wall') continue;
+        var X = cellX(st, col, row), Z = cellZ(st, col, row);
+        quads.push({ col: col, row: row, p: [pr(X - .5, 0, Z - .5), pr(X + .5, 0, Z - .5), pr(X + .5, 0, Z + .5), pr(X - .5, 0, Z + .5)] });
+        var vI = S.visited[row * st.w + col];
+        if (vI && !(col === S.cx && row === S.cy)) { pit(st, col, row); continue; }
+        if (S.reach[row * st.w + col]) plate(st, col, row, 'rgba(255,246,170,.65)', 0.10);
+        if (c.t === 'start') plate(st, col, row, COL.start, 0.16);
+        if (c.t === 'goal') plate(st, col, row, ready ? '#5FE6D8' : COL.goalTop, 0.06);
+      }
+      for (col = 0; col < st.w; col++) {
+        c = st.cells[row][col];
+        if (c.t === 'wall') { box(st, col, row, 0, WALLH, COL.wallTop, COL.wallS, COL.wallN, COL.wallE, COL.wallW); continue; }
+        if (S.visited[row * st.w + col]) continue;
+        var pX = cellX(st, col, row), pZ = cellZ(st, col, row);
+        if (c.t === 'gate') {
+          var openNS = walkable(st, col, row - 1) || walkable(st, col, row + 1);
+          var openEW = walkable(st, col - 1, row) || walkable(st, col + 1, row);
+          var ok = evalCond(S.hand, c.cond);
+          var cc = ok ? COL.gateOpen : COL.gateLock;
+          var th = 0.12, hh = 0.66;
+          var acrossX = P.rot ? !(openNS && !openEW) : (openNS && !openEW);
+          var a1 = acrossX ? [-.5, -th] : [-th, -.5], a2 = acrossX ? [.5, th] : [th, .5];
+          var x0 = pX + a1[0], z0 = pZ + a1[1], x1 = pX + a2[0], z1 = pZ + a2[1];
+          var tnw = pr(x0, hh, z0), tne = pr(x1, hh, z0), tse = pr(x1, hh, z1), tsw = pr(x0, hh, z1);
+          var bnw = pr(x0, 0, z0), bne = pr(x1, 0, z0), bse = pr(x1, 0, z1), bsw = pr(x0, 0, z1);
+          ctx.globalAlpha = ok ? 0.45 : 0.85;
+          quad(tsw, tse, bse, bsw, cc);
+          quad(tne, tnw, bnw, bne, shade(cc, -18));
+          quad(tnw, tne, tse, tsw, shade(cc, 22));
+          ctx.globalAlpha = 1;
+          labels.push({ k: 'chip', p: pr(pX, 1.05, pZ), t: (ok ? '🔓 ' : '🔒 ') + condShort(c.cond), bg: cc, fg: '#fff', sc: 0.3 });
+        } else if (c.t === 'op' || c.t === 'pow') {
+          // 道に落ちている単位も半透明の球
+          var hue = c.t === 'pow' ? HUE.pow : (c.op === '*' ? HUE.mul : HUE.div);
+          var iy = 0.42 + bob;
+          groundShadow(pr(pX, 0.02, pZ), 0.24, 0.18);
+          var sp = pr(pX, iy, pZ);
+          sphere(sp, 0.355, hue, 0.72);
+          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.72, h: sp.s * 0.72 });
+          bigText(sp.x, sp.y, tileLabel(c), Math.max(10, Math.min(24, sp.s * 0.34)), '#ffffff', 'rgba(40,20,55,.92)');
+        } else if (c.t === 'goal') {
+          labels.push({ k: 'chip', p: pr(pX, 1.24, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.32 });
+          labels.push({ k: 'text', p: pr(pX, 1.74, pZ), t: 'EXIT', sc: 0.42, fg: ready ? '#DFFFF6' : '#ffffff' });
+        }
+      }
+      if (Math.round(S.py) === row) drawBall(st, S);
+    }
+
+    labels.sort(function (a, b) { return b.p.d - a.p.d; });
+    var placed = blockers.slice();   // 単位の球と重ならないように逃がす
+    for (var li = 0; li < labels.length; li++) {
+      var L = labels[li];
+      var m = L.k === 'chip' ? measureChip(L.t, L.p.s, L.sc) : measureText(L.t, L.p.s, L.sc);
+      L.w = m.w; L.h = m.h; L.fs = m.fs;
+      L.cx = Math.max(L.w / 2 + 3, Math.min(W - L.w / 2 - 3, L.p.x));
+      L.cy = L.p.y;
+      for (var tries = 0; tries < 14; tries++) {
+        var hit = false;
+        for (var pi = 0; pi < placed.length; pi++) {
+          var qq = placed[pi];
+          if (Math.abs(L.cx - qq.cx) < (L.w + qq.w) / 2 - 2 && Math.abs(L.cy - qq.cy) < (L.h + qq.h) / 2 - 1) { hit = true; break; }
+        }
+        if (!hit) break;
+        L.cy -= 5;
+      }
+      placed.push(L);
+      if (L.k === 'chip') chip(L, L.t, L.bg, L.fg); else outlineText(L, L.t, L.fg);
+    }
+    drawFX(now);
+  }
+
+  function measureChip(text, s, scale) {
+    var fs = Math.max(9, Math.min(23, s * (scale || 0.3)));
+    ctx.font = '700 ' + fs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
+    return { w: ctx.measureText(text).width + fs * 0.84, h: fs * 1.52, fs: fs };
+  }
+  function measureText(text, s, scale) {
+    var fs = Math.max(11, Math.min(30, s * scale));
+    ctx.font = '800 ' + fs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
+    return { w: ctx.measureText(text).width + 6, h: fs * 1.25, fs: fs };
+  }
+  function chip(L, text, bg, fg) {
+    var fs = L.fs, w = L.w, h = L.h, x = L.cx - w / 2, y = L.cy - h / 2, rr = h / 2;
+    ctx.font = '700 ' + fs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, rr);
+    else { ctx.moveTo(x + rr, y); ctx.arcTo(x + w, y, x + w, y + h, rr); ctx.arcTo(x + w, y + h, x, y + h, rr); ctx.arcTo(x, y + h, x, y, rr); ctx.arcTo(x, y, x + w, y, rr); }
+    ctx.closePath();
+    ctx.save(); ctx.translate(0, Math.max(1, fs * 0.12)); ctx.fillStyle = 'rgba(0,0,0,.20)'; ctx.fill(); ctx.restore();
+    ctx.fillStyle = bg; ctx.fill();
+    ctx.lineWidth = Math.max(1.5, fs * 0.1); ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, L.cx, L.cy + fs * 0.04);
+  }
+  function outlineText(L, text, fill) { bigText(L.cx, L.cy, text, L.fs, fill, 'rgba(40,60,40,.9)'); }
+
+  function walkable(st, col, row) { var c = cellAt(st, col, row); return !!c && c.t !== 'wall'; }
+  function shade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgb(' + Math.max(0, Math.min(255, (n >> 16) + amt)) + ',' +
+      Math.max(0, Math.min(255, ((n >> 8) & 255) + amt)) + ',' +
+      Math.max(0, Math.min(255, (n & 255) + amt)) + ')';
+  }
+
+  /** 主人公：持っている単位の量で大きさと色が変わる半透明の球 */
+  function ballRadius(l1) { return Math.min(0.56, 0.26 + 0.062 * l1); }
+  function drawBall(st, S) {
+    var X = P.rot ? (S.py - (st.h - 1) / 2) : (S.px - (st.w - 1) / 2);
+    var Z = P.rot ? (S.px - (st.w - 1) / 2) : (S.py - (st.h - 1) / 2);
+    var l1 = vL1(S.hand);
+    var rw = ballRadius(l1) * (S.pop || 1);
+    var hue = 50 - Math.min(7, l1) * 3.4;      // 単位が増えるほど金→橙へ
+    groundShadow(pr(X, 0.02, Z), rw * 0.85, 0.26);
+    var p1 = pr(X, 0.16 + rw, Z);
+    if (l1 === 0) {
+      // 無次元：ほとんど透明なきらめきだけ
+      halo(p1, rw * 1.9, 'rgba(255,255,255,.55)');
+      sphere(p1, Math.max(0.12, rw), 55, 0.34, 35);
+      return;
+    }
+    halo(p1, rw * 2.0, 'hsla(' + hue + ',100%,72%,.5)');
+    sphere(p1, rw, hue, 0.74, 98);
+    // 中心の光（主人公だと分かるように）
+    ctx.save(); ctx.globalAlpha = 0.85;
+    var cr = p1.s * rw * 0.34;
+    var cg = ctx.createRadialGradient(p1.x, p1.y, 0, p1.x, p1.y, cr);
+    cg.addColorStop(0, 'rgba(255,255,255,.95)'); cg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.arc(p1.x, p1.y, cr, 0, 6.2832); ctx.fillStyle = cg; ctx.fill();
+    ctx.restore();
+  }
+
+  /* ---------- クリック → セル ---------- */
+  function pick(mx, my) {
+    for (var i = quads.length - 1; i >= 0; i--) if (inPoly(mx, my, quads[i].p)) return { col: quads[i].col, row: quads[i].row };
+    return null;
+  }
+  function inPoly(x, y, p) {
+    var inside = false;
+    for (var i = 0, j = p.length - 1; i < p.length; j = i++) {
+      if (((p[i].y > y) !== (p[j].y > y)) && (x < (p[j].x - p[i].x) * (y - p[i].y) / (p[j].y - p[i].y) + p[i].x)) inside = !inside;
+    }
+    return inside;
+  }
+
+  /** 盤面の座標(col,row) → ワールド座標。エフェクトを置くのに使う */
+  function world(st, col, row, y) {
+    return { X: cellX(st, col, row), Y: y === undefined ? 0.5 : y, Z: cellZ(st, col, row) };
+  }
+
+  return {
+    setCanvas: setCanvas, resize: resize, setupCamera: setupCamera, draw: draw, pick: pick,
+    uniStr: uniStr, sup: sup, mapDir: mapDir, addFX: addFX, hasFX: hasFX, world: world, ballRadius: ballRadius
+  };
+})();
+
+</script>
+<script>
+/* ============================================================
+   単位迷宮 — 画面まわり
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var STAGES = STAGE_DEFS.map(function (d) { return buildStage(d); });
+  var byId = {};
+  STAGES.forEach(function (s) { byId[s.id] = s; });
+
+  /* ---------- セーブデータ ---------- */
+  var MEM = {};
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return MEM[k]; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { MEM[k] = v; } }
+  };
+  var save = (function () { try { return JSON.parse(store.get('tanimeikyu_v2') || '{}'); } catch (e) { return {}; } })();
+  if (!save.clear) save.clear = {};
+  function persist() { store.set('tanimeikyu_v2', JSON.stringify(save)); }
+
+  /* ---------- 効果音（WebAudio合成／音声ファイル不要） ---------- */
+  var actx = null, muted = !!save.muted;
+  function tone(freq, dur, type, vol, delay, slideTo) {
+    if (muted) return;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      var t0 = actx.currentTime + (delay || 0);
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+      g.gain.setValueAtTime(vol === undefined ? 0.06 : vol, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    } catch (e) {}
+  }
+  var SE = {
+    step:   function () { tone(280, 0.05, 'sine', 0.025); },
+    absorb: function () { tone(300, 0.14, 'triangle', 0.07, 0, 480); },
+    cancel: function (n) {                       // 相殺：きらきらと消える音
+      var base = [880, 1175, 1568, 2093];
+      for (var i = 0; i < 3; i++) tone(base[Math.min(3, i + (n || 1) - 1)], 0.16, 'triangle', 0.075, i * 0.055);
+      tone(2600, 0.25, 'sine', 0.03, 0.02);
+    },
+    closer: function () { tone(660, 0.12, 'sine', 0.05, 0, 880); },
+    farther:function () { tone(200, 0.13, 'square', 0.035); },
+    gate:   function () { tone(520, 0.16, 'sine', 0.07, 0, 1040); },
+    ng:     function () { tone(150, 0.12, 'square', 0.05); },
+    stuck:  function () { tone(180, 0.3, 'sawtooth', 0.05, 0, 90); },
+    clear:  function () { [523, 659, 784, 1047, 1319].forEach(function (f, i) { tone(f, 0.24, 'triangle', 0.08, i * 0.1); }); }
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  function show(name) {
+    ['title', 'select', 'game'].forEach(function (n) { $('screen-' + n).classList.toggle('hidden', n !== name); });
+    window.scrollTo(0, 0);
+    if (name === 'game') startLoop();
+  }
+
+  /* ---------- ステージ選択 ---------- */
+  function starsHTML(n) {
+    var s = '';
+    for (var i = 0; i < 3; i++) s += i < n ? '★' : '<span class="off">★</span>';
+    return s;
+  }
+  function renderSelect() {
+    var chapters = [];
+    STAGES.forEach(function (s) {
+      var c = chapters.filter(function (x) { return x.name === s.chapter; })[0];
+      if (!c) { c = { name: s.chapter, list: [] }; chapters.push(c); }
+      c.list.push(s);
+    });
+    var done = Object.keys(save.clear).length;
+    var html = '<div class="progress-line">クリア済み <b>' + done + ' / ' + STAGES.length + '</b>' +
+      (done > 0 && done < STAGES.length ? '　— あと ' + (STAGES.length - done) + ' ステージでコンプリート' : '') + '</div>';
+    chapters.forEach(function (c) {
+      html += '<div class="chapter"><h3>' + c.name + '</h3><div class="cards">';
+      c.list.forEach(function (s) {
+        var rec = save.clear[s.id];
+        html += '<button class="card" data-id="' + s.id + '">' +
+          '<div class="cid">LEVEL ' + s.id + '</div>' +
+          '<div class="cname">' + s.title + '</div>' +
+          '<div class="cflow">' + unitHTML(s.startV) + '<span class="ar">→</span>' + unitHTML(s.goalV) + '</div>' +
+          '<div class="stars">' + (rec ? starsHTML(rec.stars) + (rec.masked ? ' 🧠' : '') : '<span class="off">★★★</span>') + '</div>' +
+          '</button>';
+      });
+      html += '</div></div>';
+    });
+    $('stagelist').innerHTML = html;
+    Array.prototype.forEach.call($('stagelist').querySelectorAll('.card'), function (b) {
+      b.onclick = function () { startStage(b.dataset.id); };
+    });
+  }
+
+  /* ---------- ゲーム状態 ---------- */
+  var G = null;
+
+  function startStage(id) {
+    var st = byId[id];
+    var vis = new Uint8Array(st.w * st.h);
+    vis[st.start.y * st.w + st.start.x] = 1;
+    G = {
+      stage: st, x: st.start.x, y: st.start.y, px: st.start.x, py: st.start.y,
+      hand: vnew(st.startV), visited: vis,
+      steps: 0, hints: 0, undos: 0, combo: 0, cancels: 0,
+      history: [], done: false, anim: null, pop: null, bump: null,
+      masked: !!save.maskMode
+    };
+    if (st.par === null || st.par === undefined) {
+      var p = solve(st, { x: st.start.x, y: st.start.y, hand: st.startV, visited: null });
+      st.par = p ? p.length : 999;
+    }
+    toast('');
+    show('game');
+    $('level-pill').textContent = 'Level ' + st.id + '　' + st.title;
+    $('stage-story').textContent = st.story;
+    R3.resize(); R3.setupCamera(st);
+    update('', '');
+  }
+
+  /* ---------- 描画ループ ---------- */
+  var rafId = null;
+  function reachMap() {
+    var st = G.stage, m = new Uint8Array(st.w * st.h);
+    [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(function (d) {
+      var nx = G.x + d[0], ny = G.y + d[1], c = cellAt(st, nx, ny);
+      if (!c || c.t === 'wall') return;
+      if (G.visited[ny * st.w + nx]) return;
+      if (canEnter(G.hand, c, st.goalV).ok) m[ny * st.w + nx] = 1;
+    });
+    return m;
+  }
+  function popScale() {
+    if (!G.pop) return 1;
+    var t = (performance.now() - G.pop.t0) / G.pop.dur;
+    if (t >= 1) { G.pop = null; return 1; }
+    var e = Math.sin(Math.PI * t);
+    return G.pop.k === 'grow' ? 1 + 0.34 * e : 1 - 0.42 * e;
+  }
+  function bumpOffset() {
+    if (!G.bump) return [0, 0];
+    var t = (performance.now() - G.bump.t0) / G.bump.dur;
+    if (t >= 1) { G.bump = null; return [0, 0]; }
+    var e = Math.sin(Math.PI * t) * 0.22;
+    return [G.bump.dx * e, G.bump.dy * e];
+  }
+  function paint() {
+    if (!G) return;
+    var bo = bumpOffset();
+    R3.draw(G.stage, {
+      hand: G.hand, px: G.px + bo[0], py: G.py + bo[1], cx: G.x, cy: G.y,
+      visited: G.visited, reach: reachMap(), masked: G.masked, pop: popScale()
+    });
+  }
+  function loop() {
+    if ($('screen-game').classList.contains('hidden')) { rafId = null; return; }
+    if (G && G.anim) {
+      var a = G.anim, t = (performance.now() - a.t0) / a.dur;
+      if (t >= 1) { G.px = a.tx; G.py = a.ty; G.anim = null; }
+      else {
+        var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        G.px = a.fx + (a.tx - a.fx) * e; G.py = a.fy + (a.ty - a.fy) * e;
+      }
+    }
+    paint();
+    rafId = requestAnimationFrame(loop);
+  }
+  function startLoop() { if (!rafId) rafId = requestAnimationFrame(loop); }
+  function startAnim(fx, fy, tx, ty) { G.anim = { fx: fx, fy: fy, tx: tx, ty: ty, t0: performance.now(), dur: 120 }; }
+
+  /* ---------- HUD ---------- */
+  var toastTimer = null;
+  function toast(text, kind, ms) {
+    var el = $('msg');
+    if (!text) { el.classList.remove('on'); return; }
+    el.textContent = text;
+    el.className = 'toast on ' + (kind || '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('on'); }, ms || 2400);
+  }
+  function update(msg, kind) {
+    var st = G.stage;
+    var q = quantityName(G.hand);
+    $('u-now').innerHTML = unitHTML(G.hand);
+    $('u-now').classList.toggle('masked', G.masked);
+    $('u-now-q').textContent = q ? '＝ ' + q : '';
+    $('u-now-q').classList.toggle('masked', G.masked);
+    $('u-goal').innerHTML = unitHTML(st.goalV);
+    var gq = quantityName(st.goalV);
+    $('u-goal-q').textContent = gq ? '＝ ' + gq : '';
+    var d = vdist(G.hand, st.goalV), d0 = Math.max(1, vdist(st.startV, st.goalV));
+    $('dist-fill').style.width = Math.max(0, Math.min(100, Math.round((1 - d / d0) * 100))) + '%';
+    $('dist-num').textContent = d === 0 ? 'ぴったり！' : 'あと ' + d;
+    $('steps').textContent = G.steps;
+    $('par').textContent = st.par;
+    $('btn-undo').disabled = G.history.length === 0;
+    if (msg) toast(msg, kind);
+  }
+
+  /* ---------- 移動 ---------- */
+  /** 進めなかったことを音なしでも分かるように見せる */
+  function bump(dx, dy, nx, ny) {
+    SE.ng();
+    G.bump = { dx: dx, dy: dy, t0: performance.now(), dur: 220 };
+    var st = G.stage;
+    if (nx >= 0 && ny >= 0 && nx < st.w && ny < st.h) {
+      var w = R3.world(st, nx, ny, 0.35);
+      R3.addFX({ k: 'ring', X: w.X, Y: 0.3, Z: w.Z, color: '#FF6B6B', r0: 0.5, r1: 0.15, dur: 280 });
+    }
+  }
+  function tryMove(dx, dy) {
+    if (!G || G.done) return false;
+    var st = G.stage, nx = G.x + dx, ny = G.y + dy;
+    var c = cellAt(st, nx, ny);
+    if (!c || c.t === 'wall') { bump(dx, dy, nx, ny); return false; }
+    if (G.visited[ny * st.w + nx]) { bump(dx, dy, nx, ny); toast('一度通った道は崩れている。後戻りはできない。', ''); return false; }
+    var ce = canEnter(G.hand, c, st.goalV);
+    if (!ce.ok) { bump(dx, dy, nx, ny); toast(ce.why, ''); return false; }
+
+    G.history.push({ x: G.x, y: G.y, hand: vnew(G.hand), visited: G.visited.slice(), steps: G.steps, combo: G.combo });
+    var before = G.hand, fx0 = G.px, fy0 = G.py;
+    G.x = nx; G.y = ny; G.steps++;
+    G.visited[ny * st.w + nx] = 1;
+    startAnim(fx0, fy0, nx, ny);
+
+    var msg = '', kind = '';
+    if (c.t === 'op' || c.t === 'pow') {
+      G.hand = applyCell(G.hand, c);
+      var l1b = vL1(before), l1a = vL1(G.hand);
+      var db = vdist(before, st.goalV), da = vdist(G.hand, st.goalV);
+      var w = R3.world(st, nx, ny, 0.5);
+      if (l1a < l1b) {                                   // ★相殺
+        G.combo++; G.cancels++;
+        SE.cancel(G.combo);
+        G.pop = { t0: performance.now(), dur: 340, k: 'shrink' };
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: '#ffffff', r0: 0.15, r1: 1.25, dur: 520 });
+        R3.addFX({ k: 'burst', X: w.X, Y: 0.45, Z: w.Z, color: '#FFF3B0', n: 12, seed: 0.3, dur: 620 });
+        R3.addFX({ k: 'text', X: w.X, Y: 0.9, Z: w.Z, s: G.combo > 1 ? '相殺！ ×' + G.combo : '相殺！', color: '#FFE96B', dur: 900 });
+      } else {
+        G.combo = 0;
+        SE.absorb();
+        G.pop = { t0: performance.now(), dur: 300, k: 'grow' };
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: 'rgba(255,255,255,.8)', r0: 0.5, r1: 0.1, dur: 260 });
+      }
+      if (da < db) {
+        SE.closer();
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#7BEF7B', r0: 0.2, r1: 1.0, dur: 480 });
+      } else if (da > db) {
+        SE.farther();
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#FF8A8A', r0: 0.2, r1: 0.9, dur: 420 });
+      }
+      var label = c.t === 'op' ? (c.op === '*' ? '×' : '÷') + c.u : (c.k === 0.5 ? '√' : '2乗');
+      msg = R3.uniStr(before) + '　' + label + '　→　' + R3.uniStr(G.hand);
+      kind = l1a < l1b ? 'good' : 'info';
+    } else if (c.t === 'gate') {
+      SE.gate(); msg = '関門「' + condLabel(c.cond) + '」を通過！'; kind = 'good';
+    } else if (c.t !== 'goal') SE.step();
+
+    if (nx === st.goal.x && ny === st.goal.y) { update(msg, kind); setTimeout(doClear, 260); return true; }
+    update(msg, kind);
+    setTimeout(checkStuck, 260);
+    return true;
+  }
+  function checkStuck() {
+    if (!G || G.done) return;
+    var m = reachMap(), any = false;
+    for (var i = 0; i < m.length; i++) if (m[i]) { any = true; break; }
+    if (!any) { SE.stuck(); toast('行き止まり！「もどす」か「やり直し」を。', '', 5000); return; }
+    // まだ動けるが、もう単位が作れない／EXITに行けない場合も早めに知らせる
+    if (!feasible(G.stage, { x: G.x, y: G.y, hand: G.hand, visited: G.visited })) {
+      SE.stuck(); toast('この先ではもうクリアできない。「もどす」で戻ろう。', '', 5000);
+    }
+  }
+  function undo() {
+    if (!G.history.length) return;
+    var h = G.history.pop();
+    var fx0 = G.px, fy0 = G.py;
+    G.x = h.x; G.y = h.y; G.hand = h.hand; G.visited = h.visited; G.steps = h.steps; G.combo = h.combo;
+    G.undos++;
+    startAnim(fx0, fy0, G.x, G.y);
+    update('1手もどした（' + G.undos + '回目）', '');
+  }
+  function reset() {
+    var st = G.stage;
+    G.x = st.start.x; G.y = st.start.y; G.px = G.x; G.py = G.y;
+    G.hand = vnew(st.startV);
+    G.visited = new Uint8Array(st.w * st.h); G.visited[G.y * st.w + G.x] = 1;
+    G.steps = 0; G.history = []; G.anim = null; G.combo = 0; G.undos++;
+    update('やり直し', '');
+  }
+
+  /* ---------- ヒント ---------- */
+  function hint() {
+    G.hints++;
+    var st = G.stage;
+    if (G.hints === 1) {
+      var need = [], extra = [];
+      BASE.forEach(function (d) {
+        var diff = st.goalV[d] - G.hand[d];
+        if (diff > 0) need.push('×' + d + (diff > 1 ? '×' + diff + '回' : ''));
+        if (diff < 0) extra.push('÷' + d + (diff < -1 ? '×' + (-diff) + '回' : ''));
+      });
+      var t = (need.length ? '足りない: ' + need.join('、') : '') + (need.length && extra.length ? '　/　' : '') +
+              (extra.length ? '多すぎる: ' + extra.join('、') : '');
+      toast(t || 'もう単位は合っている。EXITへ！', 'info', 5000);
+    } else {
+      var p = solve(st, { x: G.x, y: G.y, hand: G.hand, visited: G.visited });
+      if (!p) { toast('この状態からはもうクリアできない。「もどす」か「やり直し」を。', '', 5000); return; }
+      if (G.hints === 2) toast('ここからクリアまで最短 ' + p.length + ' 手。まだ間に合う。', 'info', 4000);
+      else toast('次の一手は「' + screenName(p[0]) + '」', 'info', 4000);
+    }
+  }
+
+  /* ---------- クリア ---------- */
+  function doClear() {
+    G.done = true;
+    SE.clear();
+    var st = G.stage;
+    var stars = 1;
+    if (G.hints === 0 && G.undos <= 2) stars = 3;
+    else if (G.hints <= 1 && G.undos <= 10) stars = 2;
+    var prev = save.clear[st.id];
+    if (!prev || prev.stars < stars) save.clear[st.id] = { stars: stars, steps: G.steps, masked: G.masked };
+    else if (G.masked) save.clear[st.id].masked = true;
+    persist();
+
+    var idx = STAGES.indexOf(st), next = STAGES[idx + 1];
+    var qz = st.quiz;
+    $('modal-clear').classList.remove('hidden');
+    $('clear-body').innerHTML =
+      '<h3>CLEAR！　' + st.title + '</h3>' +
+      '<div class="stars-big">' + starsHTML(stars) + '</div>' +
+      '<div style="text-align:center;color:var(--dim);font-size:13px;font-weight:700">' +
+      G.steps + ' 手（最短 ' + st.par + ' 手）／相殺 ' + G.cancels + ' 回' +
+      (G.undos ? '／もどす ' + G.undos + ' 回' : '') + (G.hints ? '／ヒント ' + G.hints + ' 回' : '') +
+      (G.masked ? '／🧠記憶モード' : '') + '</div>' +
+      '<div class="formula">' + st.formula + '</div>' +
+      '<div class="quiz" id="quizbox"><div class="q">' + qz.q + '</div>' +
+      qz.choices.map(function (c, i) { return '<button class="ch" data-i="' + i + '">' + c + '</button>'; }).join('') +
+      '<div class="exp hidden" id="quizexp">' + qz.exp + '</div></div>' +
+      '<div class="row">' +
+      '<button class="btn" id="c-retry">もう一度</button>' +
+      '<button class="btn" id="c-select">ステージ選択</button>' +
+      (next ? '<button class="btn primary" id="c-next">つぎへ</button>' : '') +
+      '</div>';
+
+    var answered = false;
+    Array.prototype.forEach.call($('quizbox').querySelectorAll('.ch'), function (b) {
+      b.onclick = function () {
+        if (answered) return; answered = true;
+        var i = +b.dataset.i;
+        b.classList.add(i === qz.ans ? 'ok' : 'ng');
+        if (i !== qz.ans) $('quizbox').querySelectorAll('.ch')[qz.ans].classList.add('ok');
+        $('quizexp').classList.remove('hidden');
+        tone(i === qz.ans ? 880 : 200, 0.15, 'triangle', 0.06);
+      };
+    });
+    $('c-retry').onclick = function () { $('modal-clear').classList.add('hidden'); startStage(st.id); };
+    $('c-select').onclick = function () { $('modal-clear').classList.add('hidden'); renderSelect(); show('select'); };
+    if (next) $('c-next').onclick = function () { $('modal-clear').classList.add('hidden'); startStage(next.id); };
+  }
+
+  /** 画面上の方向で動く（盤面が回転していても直感どおりに動く） */
+  function move(sdx, sdy) { var d = R3.mapDir(sdx, sdy); return tryMove(d[0], d[1]); }
+  var DIRNAME = { '上': [0, -1], '下': [0, 1], '左': [-1, 0], '右': [1, 0] };
+  function screenName(gridName) {
+    var g = DIRNAME[gridName]; if (!g) return gridName;
+    var sd = R3.mapDir(g[0], g[1]);
+    for (var k in DIRNAME) if (DIRNAME[k][0] === sd[0] && DIRNAME[k][1] === sd[1]) return k;
+    return gridName;
+  }
+
+  /* ---------- 入力 ---------- */
+  document.addEventListener('keydown', function (e) {
+    if ($('screen-game').classList.contains('hidden')) return;
+    if (!$('modal-clear').classList.contains('hidden')) return;
+    var map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+                w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
+    if (map[e.key]) { e.preventDefault(); move(map[e.key][0], map[e.key][1]); }
+    else if (e.key === 'z' || e.key === 'Z') undo();
+    else if (e.key === 'r' || e.key === 'R') reset();
+  });
+
+  var joy = { on: false, cx: 0, cy: 0, dir: null, timer: null };
+  function joyDir(dx, dy) {
+    if (Math.abs(dx) + Math.abs(dy) < 16) return null;
+    return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? [1, 0] : [-1, 0]) : (dy > 0 ? [0, 1] : [0, -1]);
+  }
+  function joySet(dx, dy) {
+    var lim = 30, len = Math.hypot(dx, dy);
+    if (len > lim) { dx = dx / len * lim; dy = dy / len * lim; }
+    $('knob').style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  }
+  function joyStart(e) {
+    var r = $('joy').getBoundingClientRect();
+    joy.on = true; joy.cx = r.left + r.width / 2; joy.cy = r.top + r.height / 2;
+    joyMove(e); e.preventDefault();
+  }
+  function joyMove(e) {
+    if (!joy.on) return;
+    var t = e.touches ? e.touches[0] : e;
+    var dx = t.clientX - joy.cx, dy = t.clientY - joy.cy;
+    joySet(dx, dy);
+    var d = joyDir(dx, dy), key = d ? d.join(',') : null;
+    if (key !== joy.dir) {
+      joy.dir = key;
+      clearInterval(joy.timer); joy.timer = null;
+      if (d) { move(d[0], d[1]); joy.timer = setInterval(function () { move(d[0], d[1]); }, 220); }
+    }
+    if (e.cancelable) e.preventDefault();
+  }
+  function joyEnd() {
+    joy.on = false; joy.dir = null;
+    clearInterval(joy.timer); joy.timer = null;
+    $('knob').style.transform = 'translate(0,0)';
+  }
+
+  var sw = { x: 0, y: 0 };
+  function boardDown(e) { var t = e.touches ? e.touches[0] : e; sw.x = t.clientX; sw.y = t.clientY; }
+  function boardUp(e) {
+    if (!G) return;
+    var t = e.changedTouches ? e.changedTouches[0] : e;
+    var dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+    if (Math.abs(dx) > 26 || Math.abs(dy) > 26) {
+      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : -1, 0); else move(0, dy > 0 ? 1 : -1);
+      return;
+    }
+    var r = $('cv').getBoundingClientRect();
+    var hit = R3.pick(t.clientX - r.left, t.clientY - r.top);
+    if (hit && Math.abs(hit.col - G.x) + Math.abs(hit.row - G.y) === 1) tryMove(hit.col - G.x, hit.row - G.y);
+  }
+
+  window.__DBG = { stage: function () { return G.stage; }, state: function () { return G; }, move: tryMove };
+
+  /* ---------- 起動 ---------- */
+  window.addEventListener('DOMContentLoaded', function () {
+    R3.setCanvas($('cv'));
+    $('btn-start').onclick = function () { renderSelect(); show('select'); };
+    $('btn-howto').onclick = function () { $('modal-howto').classList.remove('hidden'); };
+    $('btn-howto2').onclick = function () { $('modal-howto').classList.remove('hidden'); };
+    $('howto-close').onclick = function () { $('modal-howto').classList.add('hidden'); };
+    $('btn-back').onclick = function () { show('title'); };
+    $('btn-tomenu').onclick = function () { renderSelect(); show('select'); };
+    $('btn-undo').onclick = undo;
+    $('btn-reset').onclick = reset;
+    $('btn-hint').onclick = hint;
+    $('btn-tip').onclick = function () { toast('💡 ' + G.stage.tip, 'info', 7000); };
+
+    var j = $('joy');
+    j.addEventListener('touchstart', joyStart, { passive: false });
+    j.addEventListener('touchmove', joyMove, { passive: false });
+    j.addEventListener('touchend', joyEnd);
+    j.addEventListener('touchcancel', joyEnd);
+    j.addEventListener('mousedown', joyStart);
+    window.addEventListener('mousemove', joyMove);
+    window.addEventListener('mouseup', joyEnd);
+
+    var cvEl = $('cv');
+    cvEl.addEventListener('touchstart', boardDown, { passive: true });
+    cvEl.addEventListener('touchend', boardUp, { passive: true });
+    cvEl.addEventListener('mousedown', boardDown);
+    cvEl.addEventListener('mouseup', boardUp);
+
+    var mm = $('maskmode');
+    mm.checked = !!save.maskMode;
+    mm.onchange = function () { save.maskMode = mm.checked; persist(); if (G) { G.masked = mm.checked; update('', ''); } };
+    var mu = $('mute');
+    mu.checked = !muted;
+    mu.onchange = function () { muted = !mu.checked; save.muted = muted; persist(); };
+
+    window.addEventListener('resize', function () { if (!G) return; R3.resize(); R3.setupCamera(G.stage); });
+  });
+})();
+
+</script>
+</body>
+</html>
