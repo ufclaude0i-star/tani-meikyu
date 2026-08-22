@@ -107,6 +107,27 @@ function longPath(g, C, R_, s, t, R, tries, minLen) {
   return best;
 }
 
+/* ---- 「スタート→ゴールの単純経路上に本当に現れるセル」を数える ----
+   後戻り禁止なので、行き止まりや、どの経路にも乗らないセルに球を置いても
+   プレイヤーは絶対に使えない。そういう場所を候補から外すために使う。 */
+function usefulCells(g, C, R_, s, t, R, samples) {
+  const seen = new Set();
+  for (let k = 0; k < samples; k++) {
+    const p = longPath(g, C, R_, s, t, R, 1, 0);
+    if (p) for (const [x, y] of p) seen.add(y * C + x);
+  }
+  return seen;
+}
+function degreeOf(g, C, R_, x, y) {
+  let d = 0;
+  for (const [dx, dy] of NB) {
+    const nx = x + dx, ny = y + dy;
+    if (nx < 0 || ny < 0 || nx >= C || ny >= R_) continue;
+    if (open_(g, x, y, dx, dy)) d++;
+  }
+  return d;
+}
+
 /* ---- 単位の演算を1つ適用 ---- */
 function applyOp(hand, op) {
   if (op === '^0.5') return vpow(hand, 0.5);
@@ -184,9 +205,14 @@ function build(spec, seed) {
   if (!veq(hand, goalV)) return null;
 
   const onPath = new Set(p.map(([x, y]) => y * C + x));
+  // 実際に通り得るセルだけをダミーの置き場所にする
+  const useful = usefulCells(g, C, R_, s, t, R, 220);
   const free = [];
   for (let y = 0; y < R_; y++) for (let x = 0; x < C; x++) {
-    if (onPath.has(y * C + x)) continue;
+    const i = y * C + x;
+    if (onPath.has(i)) continue;
+    if (degreeOf(g, C, R_, x, y) <= 1) continue;   // 行き止まりには置かない
+    if (!useful.has(i)) continue;                  // どの経路にも乗らない場所にも置かない
     free.push([x, y]);
   }
   shuffle(R, free);
@@ -218,6 +244,14 @@ function build(spec, seed) {
   try { st = core.buildStage(def); } catch (e) { return null; }
   const sol = core.solve(st, { x: st.start.x, y: st.start.y, hand: st.startV, visited: null });
   if (!sol) return null;
+  // 行き止まりに球や関門が残っていたらこのシードは採用しない
+  for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) {
+    const c = st.cells[y][x];
+    if (c.t !== 'op' && c.t !== 'pow' && c.t !== 'gate') continue;
+    let deg = 0;
+    for (let i = 0; i < 4; i++) if (core.canGo(st, x, y, i)) deg++;
+    if (deg <= 1) return null;
+  }
   def.__par = sol.length;
   def.__pathLen = p.length - 1;
   return def;
