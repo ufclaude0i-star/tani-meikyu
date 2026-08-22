@@ -407,11 +407,32 @@ var R3 = (function () {
           labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#DFFFF6' : '#ffffff' });
         }
       }
-      if (Math.round(S.py) === y) drawBall(st, S);
+      if (Math.round(S.py) === y) {
+        drawBall(st, S);
+        // 主人公の球にも、いま持っている単位を出す
+        // （短ければ球の上に直接、長ければ球の真上のラベルにする）
+        if (!S.masked) {
+          var bX = P.rot ? (S.py - (st.h - 1) / 2) : (S.px - (st.w - 1) / 2);
+          var bZ = P.rot ? (S.px - (st.w - 1) / 2) : (S.py - (st.h - 1) / 2);
+          var brw = ballRadius(vL1(S.hand)) * (S.pop || 1);
+          var bp = pr(bX, 0.16 + brw, bZ);
+          var btxt = uniStr(S.hand);
+          var bfs = Math.max(10, Math.min(25, bp.s * 0.27));
+          ctx.font = '800 ' + bfs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
+          if (ctx.measureText(btxt).width < bp.s * brw * 1.7) {
+            bigText(bp.x, bp.y, btxt, bfs, '#ffffff', 'rgba(88,54,0,.92)');
+            blockers.push({ cx: bp.x, cy: bp.y, w: bp.s * brw * 2, h: bp.s * brw * 2 });
+          } else {
+            labels.push({ k: 'chip', p: pr(bX, 0.16 + brw * 2, bZ), t: btxt, bg: '#B5761A', fg: '#fff', sc: 0.26, pin: 1 });
+            blockers.push({ cx: bp.x, cy: bp.y, w: bp.s * brw * 2, h: bp.s * brw * 2 });
+          }
+        }
+      }
     }
     for (k = 0; k < southEnd.length; k++) { var q3 = southEnd[k]; slab(q3.x0, q3.x1, q3.z0, q3.z1, WALLH); }
 
-    labels.sort(function (a2, b2) { return b2.p.d - a2.p.d; });
+    // 主人公の単位ラベルは動かさない（pin）。ほかのラベルがそれを避ける
+    labels.sort(function (a2, b2) { return (b2.pin || 0) - (a2.pin || 0) || b2.p.d - a2.p.d; });
     var placed = blockers.slice();
     for (var li = 0; li < labels.length; li++) {
       var L = labels[li];
@@ -419,7 +440,7 @@ var R3 = (function () {
       L.w = m.w; L.h = m.h; L.fs = m.fs;
       L.cx = Math.max(L.w / 2 + 3, Math.min(W - L.w / 2 - 3, L.p.x));
       L.cy = L.p.y;
-      for (var tries = 0; tries < 14; tries++) {
+      for (var tries = 0; tries < (L.pin ? 0 : 14); tries++) {
         var hit = false;
         for (var pi = 0; pi < placed.length; pi++) {
           var qq = placed[pi];
