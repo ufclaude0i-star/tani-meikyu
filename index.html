@@ -1684,19 +1684,14 @@ var R3 = (function () {
     var p1 = pr(X, 0.16 + rw, Z);
     if (l1 === 0) {
       // 無次元：ほとんど透明なきらめきだけ
-      halo(p1, rw * 1.9, 'rgba(255,255,255,.55)');
-      sphere(p1, Math.max(0.12, rw), 55, 0.34, 35);
+      halo(p1, rw * 1.5, 'rgba(255,255,255,.26)');
+      sphere(p1, Math.max(0.12, rw), 55, 0.30, 35);
       return;
     }
-    halo(p1, rw * 2.0, 'hsla(' + hue + ',100%,72%,.5)');
-    sphere(p1, rw, hue, 0.88, 98);
-    // 中心の光（主人公だと分かるように）
-    ctx.save(); ctx.globalAlpha = 0.85;
-    var cr = p1.s * rw * 0.34;
-    var cg = ctx.createRadialGradient(p1.x, p1.y, 0, p1.x, p1.y, cr);
-    cg.addColorStop(0, 'rgba(255,255,255,.95)'); cg.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.beginPath(); ctx.arc(p1.x, p1.y, cr, 0, 6.2832); ctx.fillStyle = cg; ctx.fill();
-    ctx.restore();
+    // 光らせすぎない。まわりのにじみは弱く、中心の白い芯は入れない。
+    // 主人公だと分かるのは「金色であること」と「地面の影」で足りる
+    halo(p1, rw * 1.35, 'hsla(' + hue + ',95%,74%,.16)');
+    sphere(p1, rw, hue, 0.82, 88);
   }
 
   /* ---------- クリック → セル ---------- */
