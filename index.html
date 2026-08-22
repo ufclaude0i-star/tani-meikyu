@@ -31,7 +31,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 
 /* ---- ボタン（ぷっくりカートゥーン） ---- */
 .btn{
-  background:var(--card);border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;
+  background:rgba(255,255,255,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:2px solid rgba(255,255,255,.85);border-bottom-width:4px;border-bottom-color:var(--line);border-radius:14px;
+  box-shadow:0 2px 10px rgba(120,110,80,.10);
   padding:11px 18px;font-size:15px;font-weight:800;color:var(--brown-d);transition:.12s;
 }
 .btn:hover{background:#FFF8E8;border-color:var(--brown-l)}
@@ -63,8 +65,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .chapter h3{font-size:13px;color:#fff;background:var(--green);display:inline-block;
   padding:5px 12px;border-radius:99px;margin:0 0 10px;font-weight:800}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px}
-.card{background:var(--card);border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;
-  padding:11px;text-align:left;transition:.12s}
+.card{background:rgba(255,255,255,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:2px solid rgba(255,255,255,.85);border-bottom-width:4px;border-bottom-color:var(--line);border-radius:14px;
+  padding:11px;text-align:left;transition:.12s;box-shadow:0 2px 10px rgba(120,110,80,.09)}
 .card:hover{border-color:var(--brown-l);transform:translateY(-2px)}
 .card:active{transform:translateY(1px)}
 .card .cid{font-size:11px;color:var(--dim);letter-spacing:.08em;font-weight:800}
@@ -78,7 +81,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 
 /* ---- ゲーム画面 ---- */
 .gamebar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.icon-btn{width:42px;height:42px;border-radius:13px;background:var(--card);border:2px solid var(--line);
+.icon-btn{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,.85);border-bottom-color:var(--line);
   border-bottom-width:4px;font-size:19px;display:flex;align-items:center;justify-content:center;padding:0}
 .icon-btn:active{transform:translateY(2px);border-bottom-width:2px}
 .level-pill{flex:1;text-align:center;background:var(--brown);color:#fff;font-weight:900;
@@ -87,13 +90,14 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 
 .story{font-size:12.5px;color:var(--dim);font-weight:700;line-height:1.6;margin:0 2px 8px}
 .unitbar{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
-.ucard{flex:1;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 10px;min-width:0}
+.ucard{flex:1;background:rgba(255,255,255,.62);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:2px solid rgba(255,255,255,.9);border-radius:14px;padding:7px 10px;min-width:0;box-shadow:0 3px 14px rgba(110,120,90,.10)}
 .ucard .lbl{font-size:10.5px;color:var(--dim);font-weight:800}
 .ucard .val{font-size:clamp(19px,5.4vw,26px);font-weight:900;line-height:1.15;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ucard.now{border-color:#F2D48A;background:#FFFBF0}
+.ucard.now{border-color:rgba(242,212,138,.85);background:rgba(255,251,240,.66)}
 .ucard.now .val{color:var(--yellow-d)}
-.ucard.goal{border-color:#9EDCD6;background:#F0FBFA}
+.ucard.goal{border-color:rgba(158,220,214,.85);background:rgba(240,251,250,.66)}
 .ucard.goal .val{color:var(--goal)}
 .ucard .qname{font-size:10.5px;color:var(--dim);height:14px;overflow:hidden;font-weight:700}
 .arrowmid{display:flex;align-items:center;color:var(--dim);font-size:20px;font-weight:900}
@@ -103,7 +107,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   background:linear-gradient(180deg,var(--sky1),var(--sky2));touch-action:none}
 #cv{display:block;width:100%;height:100%}
 .overlay{position:absolute;inset:0;pointer-events:none}
-.hud-steps{position:absolute;top:8px;right:10px;background:rgba(255,255,255,.9);border-radius:99px;
+.hud-steps{position:absolute;top:8px;right:10px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.7);border-radius:99px;
   padding:5px 12px;font-size:12.5px;font-weight:800;color:var(--brown-d)}
 .toast{position:absolute;left:50%;transform:translateX(-50%);top:48px;max-width:86%;
   background:rgba(58,46,34,.88);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;
@@ -119,7 +123,8 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .joy .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
   border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.28);transition:transform .06s}
 
-.distbar{margin-top:9px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:9px 12px}
+.distbar{margin-top:9px;background:rgba(255,255,255,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:2px solid rgba(255,255,255,.9);border-radius:14px;padding:9px 12px}
 .distbar .track{height:11px;background:#EFE7D6;border-radius:8px;overflow:hidden}
 .distbar .fill{height:100%;background:linear-gradient(90deg,#7FD97F,var(--green));transition:width .25s;border-radius:8px}
 .distbar .cap{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);margin-top:5px;font-weight:700}
@@ -127,7 +132,8 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px}
 .controls .btn{padding:9px 6px;font-size:13px}
 .legendbox{font-size:12px;color:var(--dim);margin-top:10px;line-height:2;font-weight:600;
-  background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px}
+  background:rgba(255,255,255,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:2px solid rgba(255,255,255,.9);border-radius:14px;padding:10px 12px}
 .legendbox b{color:var(--txt)}
 .chip{display:inline-block;padding:2px 9px;border-radius:8px;font-weight:800;margin-right:3px;color:#fff}
 .chip.mul{background:var(--mul)} .chip.div{background:var(--div)}
@@ -1210,6 +1216,9 @@ var R3 = (function () {
   var P = { sin: 0, cos: 0, C: { x: 0, y: 0, z: 0 }, scale: 1, ox: 0, oy: 0, rot: 0 };
   var quads = [];
   var fx = [];
+  // 毎フレーム作ると重いものはキャッシュする（カメラは固定なので使い回せる）
+  var gradCache = {}, sphereCache = {}, shadowPath = null;
+  function clearCaches() { gradCache = {}; sphereCache = {}; shadowPath = null; }
 
   var COL = {
     sky1: '#7FCDF0', sky2: '#CDEEFF',
@@ -1232,6 +1241,7 @@ var R3 = (function () {
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    clearCaches();
   }
 
   /* ---------- 投影 ---------- */
@@ -1278,6 +1288,7 @@ var R3 = (function () {
     P.sin = best.sin; P.cos = best.cos; P.C = best.C; P.scale = best.sc;
     P.ox = W / 2 - (best.minx + best.maxx) / 2 * P.scale;
     P.oy = best.padTop + (H - best.padTop - best.padBot) / 2 - (best.miny + best.maxy) / 2 * P.scale;
+    clearCaches();
   }
 
   /* ---------- 図形 ---------- */
@@ -1285,6 +1296,20 @@ var R3 = (function () {
     ctx.beginPath();
     ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
     ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  }
+  /** 上辺が明るい縦グラデーションで塗る（a,b が上、c,d が下） */
+  function quadV(a, b, c, d, colTop, colBot) {
+    var x0 = ((a.x + b.x) / 2) | 0, y0 = ((a.y + b.y) / 2) | 0, x1 = ((c.x + d.x) / 2) | 0, y1 = ((c.y + d.y) / 2) | 0;
+    var key = x0 + ',' + y0 + ',' + x1 + ',' + y1 + colTop + colBot;
+    var g = gradCache[key];
+    if (!g) {
+      g = ctx.createLinearGradient(x0, y0, x1, y1);
+      g.addColorStop(0, colTop); g.addColorStop(1, colBot);
+      gradCache[key] = g;
+    }
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+    ctx.closePath(); ctx.fillStyle = g; ctx.fill();
   }
   function corners(st, col, row, y, r) {
     var X = cellX(st, col, row), Z = cellZ(st, col, row);
@@ -1304,7 +1329,10 @@ var R3 = (function () {
       { p: [t.nw, t.sw, b.sw, b.nw], c: COL.wallW, d: (t.nw.d + t.sw.d) / 2 }
     ];
     faces.sort(function (a2, b2) { return b2.d - a2.d; });
-    for (var i = 0; i < 4; i++) quad(faces[i].p[0], faces[i].p[1], faces[i].p[2], faces[i].p[3], faces[i].c);
+    for (var i = 0; i < 4; i++) {
+      var f = faces[i];
+      quadV(f.p[0], f.p[1], f.p[2], f.p[3], shade(f.c, 26), shade(f.c, -10));
+    }
     quad(t.nw, t.ne, t.se, t.sw, COL.wallCap);
     // 上端の明るい縁
     ctx.beginPath();
@@ -1314,7 +1342,7 @@ var R3 = (function () {
   }
 
   /** セルの中心座標（範囲外でも計算できる＝外周の壁に使う） */
-  var WT = 0.105;                       // 壁の厚み（半分）
+  var WT = 0.062;                       // 壁の厚み（半分）
   /** (x,y) と隣（dir）の境目に立つ薄い壁パネルの底面矩形 */
   function edgeRect(st, x, y, i) {
     var X1 = cellX(st, x, y), Z1 = cellZ(st, x, y);
@@ -1326,7 +1354,9 @@ var R3 = (function () {
 
   /** 壁が床に落とす影（すべてを1つのパスにまとめて1回で塗る＝重なっても濃くならない） */
   function drawShadows(rects) {
+    if (shadowPath) { ctx.save(); ctx.fillStyle = COL.shadow; ctx.fill(shadowPath); ctx.restore(); return; }
     var LX = 0.50, LZ = 0.78;                 // 左上からの光
+    var path = (typeof Path2D !== 'undefined') ? new Path2D() : null;
     ctx.save();
     ctx.beginPath();
     for (var i = 0; i < rects.length; i++) {
@@ -1337,11 +1367,13 @@ var R3 = (function () {
         pr(r.x1 + LX * d, 0.012, r.z1 + LZ * d), pr(r.x0 + LX * d, 0.012, r.z1 + LZ * d)
       ];
       var hull = convexHull(pts);
-      ctx.moveTo(hull[0].x, hull[0].y);
-      for (var j = 1; j < hull.length; j++) ctx.lineTo(hull[j].x, hull[j].y);
-      ctx.closePath();
+      var tgt = path || ctx;
+      tgt.moveTo(hull[0].x, hull[0].y);
+      for (var j = 1; j < hull.length; j++) tgt.lineTo(hull[j].x, hull[j].y);
+      tgt.closePath();
     }
-    ctx.fillStyle = COL.shadow; ctx.fill();
+    ctx.fillStyle = COL.shadow;
+    if (path) { ctx.fill(path); shadowPath = path; } else ctx.fill();
     ctx.restore();
   }
   function convexHull(ps) {
@@ -1370,25 +1402,63 @@ var R3 = (function () {
     ctx.lineTo(top.se.x, top.se.y); ctx.lineTo(top.sw.x, top.sw.y); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
 
-  /* ---------- 半透明の球 ---------- */
+  /* ---------- ガラスの球（一度だけ描いてキャッシュし、以降は貼るだけ） ---------- */
+  function sphereSprite(hue, S, R) {
+    var key = hue + '_' + S + '_' + R;
+    var got = sphereCache[key];
+    if (got) return got;
+    var pad = Math.max(2, Math.round(R * 0.10));
+    var D = R * 2 + pad * 2;
+    var cv2 = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
+    if (!cv2) return null;
+    cv2.width = Math.ceil(D * dpr); cv2.height = Math.ceil(D * dpr);
+    var c2 = cv2.getContext('2d');
+    c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var cx = D / 2, cy = D / 2, r = R;
+
+    var g = c2.createRadialGradient(cx, cy, r * 0.05, cx, cy, r);
+    g.addColorStop(0.00, 'hsla(' + hue + ',' + S + '%,72%,.22)');
+    g.addColorStop(0.55, 'hsla(' + hue + ',' + S + '%,66%,.44)');
+    g.addColorStop(0.86, 'hsla(' + hue + ',' + S + '%,58%,.82)');
+    g.addColorStop(0.97, 'hsla(' + hue + ',' + (S + 6) + '%,64%,.95)');
+    g.addColorStop(1.00, 'hsla(' + hue + ',' + S + '%,52%,.55)');
+    c2.beginPath(); c2.arc(cx, cy, r, 0, 6.2832); c2.fillStyle = g; c2.fill();
+
+    var cg = c2.createRadialGradient(cx + r * 0.22, cy + r * 0.42, r * 0.04, cx + r * 0.18, cy + r * 0.34, r * 0.72);
+    cg.addColorStop(0, 'hsla(' + hue + ',100%,88%,.75)');
+    cg.addColorStop(1, 'hsla(' + hue + ',100%,88%,0)');
+    c2.save(); c2.beginPath(); c2.arc(cx, cy, r * 0.99, 0, 6.2832); c2.clip();
+    c2.fillStyle = cg; c2.fillRect(0, 0, D, D); c2.restore();
+
+    c2.lineWidth = Math.max(1, r * 0.075);
+    var rim = c2.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+    rim.addColorStop(0, 'rgba(255,255,255,.95)');
+    rim.addColorStop(0.5, 'hsla(' + hue + ',100%,86%,.55)');
+    rim.addColorStop(1, 'hsla(' + hue + ',100%,92%,.85)');
+    c2.beginPath(); c2.arc(cx, cy, r * 0.985, 0, 6.2832); c2.strokeStyle = rim; c2.stroke();
+
+    var hl = c2.createRadialGradient(cx - r * 0.34, cy - r * 0.40, 0, cx - r * 0.34, cy - r * 0.40, r * 0.52);
+    hl.addColorStop(0, 'rgba(255,255,255,.92)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    c2.beginPath(); c2.arc(cx - r * 0.34, cy - r * 0.40, r * 0.52, 0, 6.2832); c2.fillStyle = hl; c2.fill();
+    c2.beginPath();
+    c2.ellipse(cx - r * 0.36, cy - r * 0.44, r * 0.19, r * 0.12, -0.6, 0, 6.2832);
+    c2.fillStyle = 'rgba(255,255,255,.98)'; c2.fill();
+
+    var rec = { cv: cv2, D: D };
+    sphereCache[key] = rec;
+    return rec;
+  }
   function sphere(pt, rWorld, hue, alpha, sat) {
-    var r = Math.max(3, pt.s * rWorld);
+    var r = Math.max(4, pt.s * rWorld);
+    var R = Math.max(4, Math.round(r / 1.5) * 1.5);      // 1.5pxごとに丸めてキャッシュ数を抑える
+    var spr = sphereSprite(Math.round(hue), sat || 88, R);
+    if (!spr) return;
     ctx.save();
     ctx.globalAlpha = alpha;
-    var g = ctx.createRadialGradient(pt.x - r * 0.34, pt.y - r * 0.40, r * 0.08, pt.x, pt.y, r);
-    g.addColorStop(0, 'hsla(' + hue + ',100%,96%,1)');
-    g.addColorStop(0.40, 'hsla(' + hue + ',' + (sat || 88) + '%,72%,.92)');
-    g.addColorStop(0.86, 'hsla(' + hue + ',' + (sat || 88) + '%,52%,.62)');
-    g.addColorStop(1, 'hsla(' + hue + ',' + (sat || 88) + '%,44%,.30)');
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, 6.2832); ctx.fillStyle = g; ctx.fill();
-    ctx.lineWidth = Math.max(1, r * 0.10);
-    ctx.strokeStyle = 'hsla(' + hue + ',100%,90%,.85)'; ctx.stroke();
-    ctx.globalAlpha = alpha * 0.95;
-    ctx.beginPath();
-    ctx.ellipse(pt.x - r * 0.32, pt.y - r * 0.38, r * 0.27, r * 0.17, -0.6, 0, 6.2832);
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+    ctx.drawImage(spr.cv, pt.x - spr.D / 2, pt.y - spr.D / 2, spr.D, spr.D);
     ctx.restore();
   }
+
   function halo(pt, rWorld, color) {
     var r = pt.s * rWorld;
     var g = ctx.createRadialGradient(pt.x, pt.y, r * 0.35, pt.x, pt.y, r);
@@ -1533,11 +1603,11 @@ var R3 = (function () {
           labels.push({ k: 'chip', p: pr(pX, 0.92, pZ), t: (ok ? '🔓 ' : '🔒 ') + condShort(cc.cond), bg: cg, fg: '#fff', sc: 0.26 });
         } else if (cc.t === 'op' || cc.t === 'pow') {
           var hue = cc.t === 'pow' ? HUE.pow : (cc.op === '*' ? HUE.mul : HUE.div);
-          groundShadow(pr(pX, 0.02, pZ), 0.24, 0.16);
-          var sp = pr(pX, 0.40 + bob, pZ);
-          sphere(sp, 0.30, hue, 0.72);
-          bigText(sp.x, sp.y, tileLabel(cc), Math.max(10, Math.min(24, sp.s * 0.28)), '#ffffff', 'rgba(40,20,55,.92)');
-          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.62, h: sp.s * 0.62 });
+          groundShadow(pr(pX, 0.02, pZ), 0.30, 0.15);
+          var sp = pr(pX, 0.44 + bob, pZ);
+          sphere(sp, 0.385, hue, 0.86);
+          bigText(sp.x, sp.y, tileLabel(cc), Math.max(11, Math.min(27, sp.s * 0.32)), '#ffffff', 'rgba(38,18,52,.85)');
+          blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.80, h: sp.s * 0.80 });
         } else if (cc.t === 'goal') {
           labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.26 });
           labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#DFFFF6' : '#ffffff' });
@@ -1619,7 +1689,7 @@ var R3 = (function () {
       return;
     }
     halo(p1, rw * 2.0, 'hsla(' + hue + ',100%,72%,.5)');
-    sphere(p1, rw, hue, 0.74, 98);
+    sphere(p1, rw, hue, 0.88, 98);
     // 中心の光（主人公だと分かるように）
     ctx.save(); ctx.globalAlpha = 0.85;
     var cr = p1.s * rw * 0.34;
@@ -1694,10 +1764,15 @@ var R3 = (function () {
   var SE = {
     step:   function () { tone(280, 0.05, 'sine', 0.025); },
     absorb: function () { tone(300, 0.14, 'triangle', 0.07, 0, 480); },
-    cancel: function (n) {                       // 相殺：きらきらと消える音
-      var base = [880, 1175, 1568, 2093];
-      for (var i = 0; i < 3; i++) tone(base[Math.min(3, i + (n || 1) - 1)], 0.16, 'triangle', 0.075, i * 0.055);
-      tone(2600, 0.25, 'sine', 0.03, 0.02);
+    cancel: function (n) {
+      // 相殺：高音の上昇アルペジオ＋きらめきの余韻。コンボが続くほど半音3つずつ上がる
+      var base = 1568 * Math.pow(2, Math.min(9, ((n || 1) - 1) * 3) / 12);
+      [0, 4, 7, 12].forEach(function (semi, i) {
+        tone(base * Math.pow(2, semi / 12), 0.15, 'triangle', 0.08, i * 0.042);
+      });
+      tone(base * 4, 0.55, 'sine', 0.038, 0.07);
+      tone(base * 2, 0.40, 'sine', 0.030, 0.14);
+      tone(base * 6, 0.30, 'sine', 0.018, 0.20);
     },
     closer: function () { tone(660, 0.12, 'sine', 0.05, 0, 880); },
     farther:function () { tone(200, 0.13, 'square', 0.035); },
@@ -1888,7 +1963,8 @@ var R3 = (function () {
       var l1b = vL1(before), l1a = vL1(G.hand);
       var db = vdist(before, st.goalV), da = vdist(G.hand, st.goalV);
       var w = R3.world(st, nx, ny, 0.5);
-      if (l1a < l1b) {                                   // ★相殺
+      var didCancel = l1a < l1b;
+      if (didCancel) {                                   // ★相殺
         G.combo++; G.cancels++;
         SE.cancel(G.combo);
         G.pop = { t0: performance.now(), dur: 340, k: 'shrink' };
@@ -1902,7 +1978,9 @@ var R3 = (function () {
         R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: 'rgba(255,255,255,.8)', r0: 0.5, r1: 0.1, dur: 260 });
       }
       if (da < db) {
-        SE.closer();
+        // 相殺したときは低い「近づいた音」を重ねない（高音の快感を濁さないため）。
+        // 緑のリングは出すので「正しい方向だ」という情報は失われない
+        if (!didCancel) SE.closer();
         R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#7BEF7B', r0: 0.2, r1: 1.0, dur: 480 });
       } else if (da > db) {
         SE.farther();
