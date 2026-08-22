@@ -12,7 +12,7 @@
 
   <!-- ================= タイトル ================= -->
   <section id="screen-title">
-    <div class="sky-hero">
+    <div class="hero">
       <div class="logo">単位迷宮</div>
       <div class="logo-sub">DIMENSION LABYRINTH</div>
       <p class="tagline">
@@ -26,9 +26,9 @@
       <button class="btn" id="btn-howto">あそびかた</button>
     </div>
     <div class="eqdemo">
-      kg → <span class="t" style="background:#7E57C2">×m</span> → kg·m →
-      <span class="t" style="background:#EC5B8A">÷s</span><span class="t" style="background:#EC5B8A">÷s</span>
-      → kg·m/s² = <span style="color:#17A398">N</span>
+      kg → <span class="t mul">×m</span> → kg·m →
+      <span class="t div">÷s</span><span class="t div">÷s</span>
+      → kg·m/s² = <span class="t goal">N</span>
       <small>F = ma。公式を覚えていなくても、単位を組み立てれば答えの形が見える。</small>
     </div>
   </section>
@@ -45,15 +45,19 @@
       <label class="switch"><input type="checkbox" id="maskmode">
         <span>記憶モード<span class="sub">手持ちの単位をぼかす。頭の中で計算する練習になる</span></span></label>
       <label class="switch" style="margin-top:10px"><input type="checkbox" id="mute"><span>効果音</span></label>
+      <div class="setting-row">
+        <div class="setting-lbl">迷路の壁の色<span class="sub">白い壁が背景に溶けて見えないときは変えてください</span></div>
+        <div class="swatches" id="wallcolors"></div>
+      </div>
     </div>
   </section>
 
   <!-- ================= ゲーム ================= -->
   <section id="screen-game" class="hidden">
     <div class="gamebar">
-      <button class="icon-btn" id="btn-tomenu">🏠</button>
+      <button class="icon-btn" id="btn-tomenu" title="ステージ選択にもどる（Esc）">🏠</button>
       <div class="level-pill" id="level-pill">Level 1-1</div>
-      <button class="icon-btn" id="btn-tip">💡</button>
+      <button class="icon-btn" id="btn-tip" title="このステージのヒント（T）">💡</button>
     </div>
     <div class="story" id="stage-story"></div>
 
@@ -76,7 +80,6 @@
       <div class="overlay">
         <div class="hud-steps">手数 <span id="steps">0</span> / 最短 <span id="par">-</span></div>
         <div class="toast" id="msg"></div>
-        <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
       </div>
     </div>
 
@@ -85,10 +88,13 @@
       <div class="cap"><span>EXIT の単位との「次元距離」</span><span id="dist-num"></span></div>
     </div>
 
-    <div class="controls">
-      <button class="btn sm" id="btn-undo">↩ もどす</button>
-      <button class="btn sm" id="btn-reset">やり直し</button>
-      <button class="btn sm" id="btn-hint">💡 段階ヒント</button>
+    <div class="padrow">
+      <div class="joy" id="joy" title="ドラッグで移動（キーボードは矢印キー・WASD）"><div class="knob" id="knob"></div></div>
+      <div class="controls">
+        <button class="btn sm" id="btn-undo">↩ もどす<kbd>Z</kbd></button>
+        <button class="btn sm" id="btn-reset">やり直し<kbd>R</kbd></button>
+        <button class="btn sm" id="btn-hint">💡 段階ヒント<kbd>H</kbd></button>
+      </div>
     </div>
 
     <div class="legendbox">
@@ -98,7 +104,8 @@
       <span class="chip gate">🔒</span>関門（条件を満たす単位でないと通れない）<br>
       <b>後戻りできない。</b> 通った道は崩れて穴になる。手持ちが増えると球が大きくなり、
       同じ単位で割ると<b>相殺</b>して小さくなる。<br>
-      <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD　　<b>Z</b>=もどす　<b>R</b>=やり直し
+      <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD<br>
+      <b>キーボード</b>　<kbd>Z</kbd>もどす　<kbd>R</kbd>やり直し　<kbd>H</kbd>段階ヒント　<kbd>T</kbd>ステージのヒント　<kbd>Esc</kbd>ステージ選択
     </div>
   </section>
 </div>

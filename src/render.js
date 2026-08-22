@@ -15,15 +15,45 @@ var R3 = (function () {
   function clearCaches() { gradCache = {}; sphereCache = {}; shadowPath = null; }
 
   var COL = {
-    sky1: '#7FCDF0', sky2: '#CDEEFF',
-    grass: '#6FBE73', grass2: '#67B46B', grassEdge: '#7A5C3A',
-    wallCap: '#E8C08A', wallS: '#C08A52', wallN: '#9A6A3C', wallE: '#B07C48', wallW: '#8F6034',
-    shadow: 'rgba(58,66,110,.30)',
-    pit: '#6A5B45', pitTop: '#7A6A52',
-    gateLock: '#E04B4B', gateOpen: '#43A047',
-    goal: '#17A398', goalTop: '#26C6BA',
-    start: '#EFE2C0'
+    sky1: '#F2F1EF', sky2: '#FAFAF9',
+    grass: '#EAE6DF', grass2: '#E3DFD7', grassEdge: '#CEC8BE',
+    wallCap: '#FFFFFF', wallS: '#EFECE7', wallN: '#CFCAC2', wallE: '#E2DED7', wallW: '#C5BFB6',
+    shadow: 'rgba(72,66,58,.20)',
+    pit: '#978F86', pitTop: '#A69E95',
+    gateLock: '#C05B45', gateOpen: '#3E9E76',
+    goal: '#2E8B72', goalTop: '#63B99F',
+    start: '#E4EDF8'
   };
+
+  /* ---------- 壁の色 ----------
+     白い模型のままだと背景の白と壁が同化して見づらい。
+     色は1つの基準色から5面ぶんの陰影を機械的に作る（手で5色決めると陰影が破綻するため）。
+     半透明にしてあるので、壁の向こうの床と通路が透けて見え、迷路全体の形も読み取りやすい。 */
+  var WALL_COLORS = [
+    { id: 'emerald',  name: 'エメラルド',   hex: '#4FC0A8' },
+    { id: 'sky',      name: 'スカイ',       hex: '#6DB3E8' },
+    { id: 'lavender', name: 'ラベンダー',   hex: '#A99BE3' },
+    { id: 'apricot',  name: 'アプリコット', hex: '#EFB183' },
+    { id: 'rose',     name: 'ローズ',       hex: '#E79BAF' },
+    { id: 'stone',    name: 'ストーン',     hex: '#C6C2BB' }
+  ];
+  var WALL_ALPHA = 0.78;
+  function shiftHex(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    var g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt));
+    var b = Math.max(0, Math.min(255, (n & 255) + amt));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+  function setWallColor(hex) {
+    COL.wallCap = shiftHex(hex, 38);   // 天面がいちばん明るい
+    COL.wallS   = shiftHex(hex, 12);   // 手前
+    COL.wallE   = shiftHex(hex, -6);
+    COL.wallN   = shiftHex(hex, -26);  // 奥
+    COL.wallW   = shiftHex(hex, -38);
+    clearCaches();
+  }
+  setWallColor(WALL_COLORS[0].hex);
   // 演算マスの色相（球体の色）
   var HUE = { mul: 268, div: 335, pow: 200 };
 
@@ -71,7 +101,7 @@ var R3 = (function () {
       if (q.x < minx) minx = q.x; if (q.x > maxx) maxx = q.x;
       if (q.y < miny) miny = q.y; if (q.y > maxy) maxy = q.y;
     }
-    var padX = W * 0.05, padTop = H * 0.09, padBot = H * 0.18;
+    var padX = W * 0.05, padTop = H * 0.08, padBot = H * 0.09;
     var sc = Math.min((W - padX * 2) / (maxx - minx), (H - padTop - padBot) / (maxy - miny));
     return { sc: sc, minx: minx, maxx: maxx, miny: miny, maxy: maxy, padTop: padTop, padBot: padBot, C: P.C, sin: P.sin, cos: P.cos };
   }
@@ -111,6 +141,7 @@ var R3 = (function () {
   }
   /** 直方体（薄い壁パネルにも使う） */
   function slab(x0, x1, z0, z1, y1) {
+    ctx.save(); ctx.globalAlpha = WALL_ALPHA;
     var b = {
       nw: pr(x0, 0, z0), ne: pr(x1, 0, z0), se: pr(x1, 0, z1), sw: pr(x0, 0, z1)
     }, t = {
@@ -133,6 +164,7 @@ var R3 = (function () {
     ctx.moveTo(t.nw.x, t.nw.y); ctx.lineTo(t.ne.x, t.ne.y); ctx.lineTo(t.se.x, t.se.y); ctx.lineTo(t.sw.x, t.sw.y);
     ctx.closePath();
     ctx.lineWidth = Math.max(0.8, t.nw.s * 0.035); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.stroke();
+    ctx.restore();
   }
 
   /** セルの中心座標（範囲外でも計算できる＝外周の壁に使う） */
@@ -188,10 +220,10 @@ var R3 = (function () {
   function pit(st, col, row) {
     var top = corners(st, col, row, 0, 0.5), bot = corners(st, col, row, -0.17, 0.5);
     quad(top.sw, top.se, bot.se, bot.sw, COL.pit);
-    quad(top.se, top.ne, bot.ne, bot.se, '#5B4E3C');
-    quad(top.nw, top.sw, bot.sw, bot.nw, '#5B4E3C');
-    quad(bot.nw, bot.ne, bot.se, bot.sw, '#4C4132');
-    ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = '#3E3527'; ctx.lineWidth = 1.1;
+    quad(top.se, top.ne, bot.ne, bot.se, '#8B847B');
+    quad(top.nw, top.sw, bot.sw, bot.nw, '#8B847B');
+    quad(bot.nw, bot.ne, bot.se, bot.sw, '#7C756C');
+    ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = '#5E574F'; ctx.lineWidth = 1.1;
     ctx.beginPath(); ctx.moveTo(top.nw.x, top.nw.y); ctx.lineTo(top.ne.x, top.ne.y);
     ctx.lineTo(top.se.x, top.se.y); ctx.lineTo(top.sw.x, top.sw.y); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
@@ -245,7 +277,7 @@ var R3 = (function () {
   function sphere(pt, rWorld, hue, alpha, sat) {
     var r = Math.max(4, pt.s * rWorld);
     var R = Math.max(4, Math.round(r / 1.5) * 1.5);      // 1.5pxごとに丸めてキャッシュ数を抑える
-    var spr = sphereSprite(Math.round(hue), sat || 88, R);
+    var spr = sphereSprite(Math.round(hue), sat || 72, R);
     if (!spr) return;
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -260,14 +292,14 @@ var R3 = (function () {
     ctx.save(); ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, 6.2832); ctx.fillStyle = g; ctx.fill(); ctx.restore();
   }
   function groundShadow(pt, rWorld, a) {
-    ctx.save(); ctx.globalAlpha = a === undefined ? 0.22 : a; ctx.fillStyle = '#1b3a1b';
+    ctx.save(); ctx.globalAlpha = a === undefined ? 0.22 : a; ctx.fillStyle = '#4B443C';
     ctx.beginPath(); ctx.ellipse(pt.x, pt.y, pt.s * rWorld, pt.s * rWorld * 0.5, 0, 0, 6.2832); ctx.fill();
     ctx.restore();
   }
   function bigText(x, y, text, fs, fill, outline) {
     ctx.font = '800 ' + fs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = Math.max(2.5, fs * 0.3); ctx.strokeStyle = outline || 'rgba(40,50,40,.9)';
+    ctx.lineWidth = Math.max(2, fs * 0.2); ctx.strokeStyle = outline || 'rgba(58,53,47,.9)';
     ctx.lineJoin = 'round'; ctx.strokeText(text, x, y);
     ctx.fillStyle = fill; ctx.fillText(text, x, y);
   }
@@ -314,7 +346,7 @@ var R3 = (function () {
         }
       } else if (f.k === 'text') {
         ctx.globalAlpha = t < 0.75 ? 1 : (1 - t) * 4;
-        bigText(p.x, p.y - p.s * 0.9 * t, f.s, Math.max(12, Math.min(30, p.s * 0.36)), f.color, 'rgba(30,30,30,.85)');
+        bigText(p.x, p.y - p.s * 0.9 * t, f.s, Math.max(12, Math.min(30, p.s * 0.36)), f.color, f.outline || 'rgba(255,255,255,.92)');
       }
       ctx.restore();
     }
@@ -372,9 +404,9 @@ var R3 = (function () {
         quads.push({ col: x, row: y, p: [pr(X - .5, 0, Z - .5), pr(X + .5, 0, Z - .5), pr(X + .5, 0, Z + .5), pr(X - .5, 0, Z + .5)] });
         var vI = S.visited[y * st.w + x];
         if (vI && !(x === S.cx && y === S.cy)) { pit(st, x, y); continue; }
-        if (S.reach[y * st.w + x]) plate(st, x, y, 'rgba(255,246,170,.7)', 0.14);
+        if (S.reach[y * st.w + x]) plate(st, x, y, 'rgba(120,162,212,.20)', 0.14);
         if (cc.t === 'start') plate(st, x, y, COL.start, 0.2);
-        if (cc.t === 'goal') plate(st, x, y, ready ? '#5FE6D8' : COL.goalTop, 0.12);
+        if (cc.t === 'goal') plate(st, x, y, ready ? '#7FD3BC' : COL.goalTop, 0.12);
       }
       // 壁パネル（奥→手前）
       for (var k = 0; k < rows2[y].hN.length; k++) { var q1 = rows2[y].hN[k]; slab(q1.x0, q1.x1, q1.z0, q1.z1, WALLH); }
@@ -403,8 +435,8 @@ var R3 = (function () {
           bigText(sp.x, sp.y, tileLabel(cc), Math.max(11, Math.min(27, sp.s * 0.32)), '#ffffff', 'rgba(38,18,52,.85)');
           blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.80, h: sp.s * 0.80 });
         } else if (cc.t === 'goal') {
-          labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.26 });
-          labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#DFFFF6' : '#ffffff' });
+          labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#2E7D5B' : '#2E8B72', fg: '#fff', sc: 0.26 });
+          labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#2E7D5B' : '#44403C' });
         }
       }
       if (Math.round(S.py) === y) {
@@ -420,10 +452,10 @@ var R3 = (function () {
           var bfs = Math.max(10, Math.min(25, bp.s * 0.27));
           ctx.font = '800 ' + bfs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
           if (ctx.measureText(btxt).width < bp.s * brw * 1.7) {
-            bigText(bp.x, bp.y, btxt, bfs, '#ffffff', 'rgba(88,54,0,.92)');
+            bigText(bp.x, bp.y, btxt, bfs, '#ffffff', 'rgba(60,54,45,.92)');
             blockers.push({ cx: bp.x, cy: bp.y, w: bp.s * brw * 2, h: bp.s * brw * 2 });
           } else {
-            labels.push({ k: 'chip', p: pr(bX, 0.16 + brw * 2, bZ), t: btxt, bg: '#B5761A', fg: '#fff', sc: 0.26, pin: 1 });
+            labels.push({ k: 'chip', p: pr(bX, 0.16 + brw * 2, bZ), t: btxt, bg: '#57514A', fg: '#fff', sc: 0.26, pin: 1 });
             blockers.push({ cx: bp.x, cy: bp.y, w: bp.s * brw * 2, h: bp.s * brw * 2 });
           }
         }
@@ -478,7 +510,7 @@ var R3 = (function () {
     ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(text, L.cx, L.cy + fs * 0.04);
   }
-  function outlineText(L, text, fill) { bigText(L.cx, L.cy, text, L.fs, fill, 'rgba(40,60,40,.9)'); }
+  function outlineText(L, text, fill) { bigText(L.cx, L.cy, text, L.fs, fill, L.outline || 'rgba(255,255,255,.92)'); }
 
   function shade(hex, amt) {
     var n = parseInt(hex.slice(1), 16);
@@ -506,7 +538,7 @@ var R3 = (function () {
     // 光らせすぎない。まわりのにじみは弱く、中心の白い芯は入れない。
     // 主人公だと分かるのは「金色であること」と「地面の影」で足りる
     halo(p1, rw * 1.35, 'hsla(' + hue + ',95%,74%,.16)');
-    sphere(p1, rw, hue, 0.82, 88);
+    sphere(p1, rw, hue, 0.82, 72);
   }
 
   /* ---------- クリック → セル ---------- */
@@ -529,6 +561,7 @@ var R3 = (function () {
 
   return {
     setCanvas: setCanvas, resize: resize, setupCamera: setupCamera, draw: draw, pick: pick,
-    uniStr: uniStr, sup: sup, mapDir: mapDir, addFX: addFX, hasFX: hasFX, world: world, ballRadius: ballRadius
+    uniStr: uniStr, sup: sup, mapDir: mapDir, addFX: addFX, hasFX: hasFX, world: world, ballRadius: ballRadius,
+    wallColors: WALL_COLORS, setWallColor: setWallColor
   };
 })();

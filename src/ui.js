@@ -210,7 +210,7 @@
     var st = G.stage;
     if (nx >= 0 && ny >= 0 && nx < st.w && ny < st.h) {
       var w = R3.world(st, nx, ny, 0.35);
-      R3.addFX({ k: 'ring', X: w.X, Y: 0.3, Z: w.Z, color: '#FF6B6B', r0: 0.5, r1: 0.15, dur: 280 });
+      R3.addFX({ k: 'ring', X: w.X, Y: 0.3, Z: w.Z, color: '#C05B45', r0: 0.5, r1: 0.15, dur: 280 });
     }
   }
   function tryMove(dx, dy) {
@@ -236,25 +236,28 @@
       var l1b = vL1(before), l1a = vL1(G.hand);
       var db = vdist(before, st.goalV), da = vdist(G.hand, st.goalV);
       var w = R3.world(st, nx, ny, 0.5);
-      if (l1a < l1b) {                                   // ★相殺
+      var didCancel = l1a < l1b;
+      if (didCancel) {                                   // ★相殺
         G.combo++; G.cancels++;
         SE.cancel(G.combo);
         G.pop = { t0: performance.now(), dur: 340, k: 'shrink' };
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: '#ffffff', r0: 0.15, r1: 1.25, dur: 520 });
-        R3.addFX({ k: 'burst', X: w.X, Y: 0.45, Z: w.Z, color: '#FFF3B0', n: 12, seed: 0.3, dur: 620 });
-        R3.addFX({ k: 'text', X: w.X, Y: 0.9, Z: w.Z, s: G.combo > 1 ? '相殺！ ×' + G.combo : '相殺！', color: '#FFE96B', dur: 900 });
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: '#D9A521', r0: 0.15, r1: 1.25, dur: 520 });
+        R3.addFX({ k: 'burst', X: w.X, Y: 0.45, Z: w.Z, color: '#E3B45A', n: 12, seed: 0.3, dur: 620 });
+        R3.addFX({ k: 'text', X: w.X, Y: 0.9, Z: w.Z, s: G.combo > 1 ? '相殺！ ×' + G.combo : '相殺！', color: '#A8761E', dur: 900 });
       } else {
         G.combo = 0;
         SE.absorb();
         G.pop = { t0: performance.now(), dur: 300, k: 'grow' };
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: 'rgba(255,255,255,.8)', r0: 0.5, r1: 0.1, dur: 260 });
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: 'rgba(120,113,108,.75)', r0: 0.5, r1: 0.1, dur: 260 });
       }
       if (da < db) {
-        SE.closer();
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#7BEF7B', r0: 0.2, r1: 1.0, dur: 480 });
+        // 相殺したときは低い「近づいた音」を重ねない（高音の快感を濁さないため）。
+        // 緑のリングは出すので「正しい方向だ」という情報は失われない
+        if (!didCancel) SE.closer();
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#3E9E76', r0: 0.2, r1: 1.0, dur: 480 });
       } else if (da > db) {
         SE.farther();
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#FF8A8A', r0: 0.2, r1: 0.9, dur: 420 });
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#C05B45', r0: 0.2, r1: 0.9, dur: 420 });
       }
       var label = c.t === 'op' ? (c.op === '*' ? '×' : '÷') + c.u : (c.k === 0.5 ? '√' : '2乗');
       msg = R3.uniStr(before) + '　' + label + '　→　' + R3.uniStr(G.hand);
@@ -343,12 +346,12 @@
       (G.masked ? '／🧠記憶モード' : '') + '</div>' +
       '<div class="formula">' + st.formula + '</div>' +
       '<div class="quiz" id="quizbox"><div class="q">' + qz.q + '</div>' +
-      qz.choices.map(function (c, i) { return '<button class="ch" data-i="' + i + '">' + c + '</button>'; }).join('') +
+      qz.choices.map(function (c, i) { return '<button class="ch" data-i="' + i + '"><kbd>' + (i + 1) + '</kbd> ' + c + '</button>'; }).join('') +
       '<div class="exp hidden" id="quizexp">' + qz.exp + '</div></div>' +
       '<div class="row">' +
-      '<button class="btn" id="c-retry">もう一度</button>' +
-      '<button class="btn" id="c-select">ステージ選択</button>' +
-      (next ? '<button class="btn primary" id="c-next">つぎへ</button>' : '') +
+      '<button class="btn" id="c-retry">もう一度<kbd>R</kbd></button>' +
+      '<button class="btn" id="c-select">ステージ選択<kbd>Esc</kbd></button>' +
+      (next ? '<button class="btn primary" id="c-next">つぎへ<kbd>Enter</kbd></button>' : '') +
       '</div>';
 
     var answered = false;
@@ -378,14 +381,31 @@
   }
 
   /* ---------- 入力 ---------- */
+  function showTip() { if (G && G.stage) toast('💡 ' + G.stage.tip, 'info', 7000); }
+
   document.addEventListener('keydown', function (e) {
     if ($('screen-game').classList.contains('hidden')) return;
     if (!$('modal-clear').classList.contains('hidden')) return;
+    if (!$('modal-howto').classList.contains('hidden')) return;
     var map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
                 w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
     if (map[e.key]) { e.preventDefault(); move(map[e.key][0], map[e.key][1]); }
-    else if (e.key === 'z' || e.key === 'Z') undo();
-    else if (e.key === 'r' || e.key === 'R') reset();
+    // 画面のボタンと同じことをキーでもできるようにする（PCではマウスに持ち替えずに済む）
+    else if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); undo(); }
+    else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); reset(); }
+    else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); hint(); }
+    else if (e.key === 't' || e.key === 'T') { e.preventDefault(); showTip(); }
+    else if (e.key === 'Escape') { e.preventDefault(); renderSelect(); show('select'); }
+  });
+
+  // クリア画面もキーだけで進められるようにする
+  document.addEventListener('keydown', function (e) {
+    if ($('modal-clear').classList.contains('hidden')) return;
+    var chs = $('quizbox') ? $('quizbox').querySelectorAll('.ch') : [];
+    if (e.key === 'Enter') { e.preventDefault(); var b = $('c-next') || $('c-retry'); if (b) b.click(); }
+    else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); if ($('c-retry')) $('c-retry').click(); }
+    else if (e.key === 'Escape') { e.preventDefault(); if ($('c-select')) $('c-select').click(); }
+    else if (e.key >= '1' && e.key <= '9' && chs[+e.key - 1]) { e.preventDefault(); chs[+e.key - 1].click(); }
   });
 
   var joy = { on: false, cx: 0, cy: 0, dir: null, timer: null };
@@ -458,7 +478,7 @@
     $('btn-undo').onclick = undo;
     $('btn-reset').onclick = reset;
     $('btn-hint').onclick = hint;
-    $('btn-tip').onclick = function () { toast('💡 ' + G.stage.tip, 'info', 7000); };
+    $('btn-tip').onclick = showTip;
 
     var j = $('joy');
     j.addEventListener('touchstart', joyStart, { passive: false });
@@ -475,6 +495,24 @@
     cvEl.addEventListener('mousedown', boardDown);
     cvEl.addEventListener('mouseup', boardUp);
 
+    // 壁の色（白い壁が背景と同化して見えない、という指摘への対応）
+    var WC = R3.wallColors, wcbox = $('wallcolors');
+    function applyWall(id) {
+      var hit = WC[0];
+      for (var i = 0; i < WC.length; i++) if (WC[i].id === id) hit = WC[i];
+      R3.setWallColor(hit.hex);
+      save.wallColor = hit.id; persist();
+      var bs = wcbox.querySelectorAll('.sw');
+      for (i = 0; i < bs.length; i++) bs[i].className = 'sw' + (bs[i].getAttribute('data-id') === hit.id ? ' on' : '');
+    }
+    wcbox.innerHTML = WC.map(function (c) {
+      return '<button class="sw" data-id="' + c.id + '" title="' + c.name + '" aria-label="' + c.name +
+        '" style="background:' + c.hex + '"></button>';
+    }).join('');
+    Array.prototype.forEach.call(wcbox.querySelectorAll('.sw'), function (b) {
+      b.onclick = function () { applyWall(b.getAttribute('data-id')); };
+    });
+    applyWall(save.wallColor || WC[0].id);
     var mm = $('maskmode');
     mm.checked = !!save.maskMode;
     mm.onchange = function () { save.maskMode = mm.checked; persist(); if (G) { G.masked = mm.checked; update('', ''); } };

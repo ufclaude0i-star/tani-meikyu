@@ -65,7 +65,11 @@ const TARGET = process.argv[2] || 'https://ufclaude0i-star.github.io/tani-meikyu
     '下から回り込む透過光': /createRadialGradient\(cx \+ r \* 0\.22/.test(html),
     '左上が白・右下が色の縁の光': /rim\.addColorStop\(0, 'rgba\(255,255,255,\.95\)'\)/.test(html),
     '2段ハイライト（にじみ＋芯）': /hl\.addColorStop\(0, 'rgba\(255,255,255,\.92\)'\)/.test(html),
-    'UIの半透明＋背景ぼかし': /backdrop-filter:blur/.test(html)
+    'すりガラスが残っていない': !/backdrop-filter/.test(html),
+    '太い立体ボタンが残っていない': !/border-bottom-width:4px/.test(html),
+    '主ボタンが黒': html.includes(".btn.primary{background:var(--ink)"),
+    '盤面の空が淡いグレー': /sky1: '#F2F1EF'/.test(html),
+    '壁の天面が白': /wallCap: '#FFFFFF'/.test(html)
   };
   for (const k in glass) console.log(`   ${glass[k] ? '✅' : '❌'} ${k}`);
 

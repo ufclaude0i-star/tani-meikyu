@@ -5,170 +5,220 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>単位迷宮 — Dimension Labyrinth</title>
 <meta name="description" content="物理の単位を掛けたり割ったりしながら3D迷路を抜ける、次元解析の学習ゲーム。">
-<style>/* ===== 単位迷宮 スタイル（明るいカートゥーン調） ===== */
+<style>/* ===== 単位迷宮 スタイル =====
+   面は白、線は 1px、影はほぼ無し。強調は「黒」と「淡い色面」だけで作る。
+   ただし mul / div / pow / gate / goal の色相だけは 3D の球と対応しているので動かさない
+   （凡例のチップを見て迷路のどの球のことか分かる必要があるため）。 */
 :root{
-  --sky1:#7FCDF0; --sky2:#CDEEFF;
-  --paper:#FBF6EA; --card:#FFFFFF;
-  --brown:#8B5A2B; --brown-d:#6E4520; --brown-l:#CE9455;
-  --green:#3FA83F; --green-d:#2F8B2F;
-  --yellow:#FFC93C; --yellow-d:#E5A400;
-  --mul:#7E57C2; --div:#EC5B8A; --gate:#E04B4B; --goal:#17A398;
-  --txt:#3A2E22; --dim:#8A7A68; --line:#E4D9C4;
-  --r:16px;
+  /* 面と線 */
+  --bg:#FAFAF9; --card:#FFFFFF; --sunken:#F5F5F4;
+  --line:#E7E5E4; --line-2:#D6D3D1;
+  --txt:#1C1917; --dim:#78716C; --dim-2:#A8A29E;
+  --ink:#171717;
+  /* アクセントは3系統だけ */
+  --blue:#2F6BB4; --blue-d:#1F4E8C; --blue-bg:#EFF5FC; --blue-line:#CBDDF2;
+  --green:#2E7D5B; --green-bg:#E9F3EE; --green-line:#C6E2D1;
+  --clay:#B4503C; --clay-bg:#FCEFEC; --clay-line:#F4D5CD;
+  --star:#C9962B;
+  /* ステージ選択のカード。白地＋白背景だと境界が見えないので淡いエメラルドを敷く */
+  --em:#4FC0A8; --em-d:#1B7A67;
+  --em-bg:rgba(79,192,168,.13); --em-bg-2:rgba(79,192,168,.24); --em-line:rgba(47,169,143,.40);
+  /* 迷路の記号色（3Dの球と同じ色相） */
+  --mul:#6B54B8; --mul-bg:#F0EDFA;
+  --div:#C74B79; --div-bg:#FBEEF3;
+  --pow:#2C7FB8; --pow-bg:#EDF5FA;
+  --gate:#B4503C; --goal:#1E8E82;
+  /* スティックのつまみ（明るい受け皿に埋もれないよう十分に暗く） */
+  --knob:#A8A29E; --knob-d:#8C8681;
+  --r:14px; --r-sm:10px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;min-height:100%}
 body{
-  background:var(--paper);
+  background:var(--bg);
   color:var(--txt);
-  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,-apple-system,sans-serif;
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  font-feature-settings:"palt" 1;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
   overscroll-behavior:none;
 }
 sup{font-size:.62em;vertical-align:super;line-height:0}
 button{font-family:inherit;color:inherit;cursor:pointer}
 .hidden{display:none !important}
-.wrap{max-width:760px;margin:0 auto;padding:12px 12px 32px}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 40px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
-/* ---- ボタン（ぷっくりカートゥーン） ---- */
+/* ---- ボタン ---- */
 .btn{
-  background:rgba(255,255,255,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:2px solid rgba(255,255,255,.85);border-bottom-width:4px;border-bottom-color:var(--line);border-radius:14px;
-  box-shadow:0 2px 10px rgba(120,110,80,.10);
-  padding:11px 18px;font-size:15px;font-weight:800;color:var(--brown-d);transition:.12s;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:10px 16px;font-size:14px;font-weight:600;color:var(--txt);
+  transition:background .12s,border-color .12s;
 }
-.btn:hover{background:#FFF8E8;border-color:var(--brown-l)}
-.btn:active{transform:translateY(2px);border-bottom-width:2px}
-.btn.primary{background:linear-gradient(180deg,#FFD75E,#FFB92E);border-color:#D89A18;color:#4A3208}
-.btn.primary:hover{filter:brightness(1.05)}
-.btn.green{background:linear-gradient(180deg,#5FC85F,#3FA83F);border-color:#2C7F2C;color:#fff}
-.btn.sm{padding:8px 12px;font-size:13px;border-radius:12px}
-.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn:hover{background:var(--sunken);border-color:var(--line-2)}
+.btn:active{background:#EDEBE9}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#333;border-color:#333}
+.btn.green{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
+.btn.sm{padding:9px 12px;font-size:13px}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn:disabled:hover{background:var(--card);border-color:var(--line)}
 
 /* ---- タイトル ---- */
-#screen-title{text-align:center;padding-top:4vh}
-.sky-hero{background:linear-gradient(180deg,var(--sky1),var(--sky2));border-radius:22px;
-  padding:26px 16px 22px;border:3px solid #fff;box-shadow:0 8px 24px rgba(80,120,150,.22)}
-.logo{font-size:clamp(36px,10vw,62px);font-weight:900;letter-spacing:.05em;color:#fff;
-  text-shadow:0 4px 0 #5AA0C4,0 7px 14px rgba(0,0,0,.2)}
-.logo-sub{color:#2E6E8C;letter-spacing:.3em;font-size:12px;font-weight:800;margin-top:4px}
-.tagline{color:#31424F;margin:18px auto 0;max-width:480px;line-height:1.95;font-size:14.5px}
-.title-btns{display:flex;flex-direction:column;gap:12px;max-width:290px;margin:20px auto 0}
-.eqdemo{margin:20px auto 0;max-width:460px;background:var(--card);border:2px solid var(--line);
-  border-radius:var(--r);padding:14px;font-size:17px;font-weight:800;color:var(--brown-d)}
-.eqdemo .t{display:inline-block;padding:2px 9px;border-radius:9px;color:#fff;margin:0 2px}
-.eqdemo small{display:block;color:var(--dim);font-size:12px;margin-top:8px;font-weight:600;line-height:1.7}
+#screen-title{padding-top:5vh}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:44px 24px 36px;text-align:center}
+.logo{font-size:clamp(30px,7.5vw,44px);font-weight:700;letter-spacing:.14em;color:var(--txt)}
+.logo-sub{color:var(--dim-2);letter-spacing:.28em;font-size:10.5px;font-weight:600;margin-top:10px}
+.tagline{color:var(--dim);margin:24px auto 0;max-width:460px;line-height:2.05;font-size:13.5px}
+.title-btns{display:flex;flex-direction:column;gap:10px;max-width:300px;margin:18px auto 0}
+.eqdemo{margin:16px auto 0;max-width:540px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r);padding:20px;font-size:15.5px;font-weight:600;color:var(--txt);text-align:center}
+.eqdemo .t{display:inline-block;padding:2px 8px;border-radius:7px;margin:0 3px;font-size:14px;font-weight:600}
+.eqdemo .t.mul{background:var(--mul-bg);color:var(--mul)}
+.eqdemo .t.div{background:var(--div-bg);color:var(--div)}
+.eqdemo .t.goal{background:transparent;color:var(--goal);padding:0}
+.eqdemo small{display:block;color:var(--dim);font-size:12px;margin-top:14px;font-weight:400;line-height:1.85}
 
 /* ---- ステージ選択 ---- */
-.topbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.topbar h2{margin:0;font-size:18px;flex:1;font-weight:900}
-.chapter{margin-bottom:20px}
-.chapter h3{font-size:13px;color:#fff;background:var(--green);display:inline-block;
-  padding:5px 12px;border-radius:99px;margin:0 0 10px;font-weight:800}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px}
-.card{background:rgba(255,255,255,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:2px solid rgba(255,255,255,.85);border-bottom-width:4px;border-bottom-color:var(--line);border-radius:14px;
-  padding:11px;text-align:left;transition:.12s;box-shadow:0 2px 10px rgba(120,110,80,.09)}
-.card:hover{border-color:var(--brown-l);transform:translateY(-2px)}
-.card:active{transform:translateY(1px)}
-.card .cid{font-size:11px;color:var(--dim);letter-spacing:.08em;font-weight:800}
-.card .cname{font-weight:900;margin:2px 0 7px;font-size:15px;color:var(--brown-d)}
-.card .cflow{font-size:14px;font-weight:800;color:var(--green-d)}
-.card .cflow .ar{color:var(--dim);margin:0 5px}
-.card .stars{margin-top:7px;font-size:14px;letter-spacing:2px;color:var(--yellow-d)}
-.card .stars .off{color:#DDD3C0}
-.progress-line{color:var(--dim);font-size:13px;margin-bottom:12px;font-weight:700}
-.setting-box{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:8px}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.topbar h2{margin:0;font-size:17px;flex:1;font-weight:700}
+.chapter{margin-bottom:26px}
+.chapter h3{font-size:11.5px;color:var(--dim);display:block;margin:0 0 10px;font-weight:600;letter-spacing:.08em}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(162px,1fr));gap:10px}
+.card{background:var(--em-bg);border:1px solid var(--em-line);border-radius:var(--r);
+  padding:14px;text-align:left;transition:background .12s,border-color .12s}
+.card:hover{background:var(--em-bg-2);border-color:rgba(47,169,143,.62)}
+.card .cid{font-size:10.5px;color:#6F8880;letter-spacing:.1em;font-weight:600}
+.card .cname{font-weight:700;margin:5px 0 10px;font-size:15px;color:var(--txt)}
+.card .cflow{font-size:14px;font-weight:600;color:var(--em-d)}
+.card .cflow .ar{color:var(--dim-2);margin:0 6px;font-weight:400}
+.card .stars{margin-top:10px;font-size:12.5px;letter-spacing:3px;color:var(--star)}
+.card .stars .off{color:rgba(27,122,103,.22)}
+.progress-line{color:var(--dim);font-size:13px;margin-bottom:20px}
+.setting-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:8px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.setting-lbl{font-size:13.5px;font-weight:500;color:var(--txt)}
+.setting-lbl .sub{display:block;font-size:11.5px;color:var(--dim);font-weight:400;margin-top:3px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:30px;height:30px;border-radius:9px;border:1px solid rgba(0,0,0,.10);padding:0;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);transition:transform .1s}
+.sw:hover{transform:translateY(-2px)}
+.sw.on{outline:2px solid var(--txt);outline-offset:2px}
 
 /* ---- ゲーム画面 ---- */
-.gamebar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.icon-btn{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,.85);border-bottom-color:var(--line);
-  border-bottom-width:4px;font-size:19px;display:flex;align-items:center;justify-content:center;padding:0}
-.icon-btn:active{transform:translateY(2px);border-bottom-width:2px}
-.level-pill{flex:1;text-align:center;background:var(--brown);color:#fff;font-weight:900;
-  padding:9px 14px;border-radius:99px;border:3px solid #fff;box-shadow:0 3px 0 var(--brown-d);
-  font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gamebar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.icon-btn{width:38px;height:38px;border-radius:var(--r-sm);background:var(--card);
+  border:1px solid var(--line);font-size:16px;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.icon-btn:hover{background:var(--sunken);border-color:var(--line-2)}
+.level-pill{flex:1;text-align:center;color:var(--txt);font-weight:700;font-size:15px;
+  padding:8px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.story{font-size:12.5px;color:var(--dim);font-weight:700;line-height:1.6;margin:0 2px 8px}
-.unitbar{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
-.ucard{flex:1;background:rgba(255,255,255,.62);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:2px solid rgba(255,255,255,.9);border-radius:14px;padding:7px 10px;min-width:0;box-shadow:0 3px 14px rgba(110,120,90,.10)}
-.ucard .lbl{font-size:10.5px;color:var(--dim);font-weight:800}
-.ucard .val{font-size:clamp(19px,5.4vw,26px);font-weight:900;line-height:1.15;
+.story{font-size:12.5px;color:var(--dim);line-height:1.85;margin:0 2px 12px}
+.unitbar{display:flex;gap:8px;align-items:stretch;margin-bottom:10px}
+.ucard{flex:1;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:11px 14px;min-width:0}
+.ucard .lbl{font-size:10.5px;color:var(--dim);font-weight:600}
+.ucard .val{font-size:clamp(20px,5.4vw,28px);font-weight:700;line-height:1.3;margin-top:3px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ucard.now{border-color:rgba(242,212,138,.85);background:rgba(255,251,240,.66)}
-.ucard.now .val{color:var(--yellow-d)}
-.ucard.goal{border-color:rgba(158,220,214,.85);background:rgba(240,251,250,.66)}
-.ucard.goal .val{color:var(--goal)}
-.ucard .qname{font-size:10.5px;color:var(--dim);height:14px;overflow:hidden;font-weight:700}
-.arrowmid{display:flex;align-items:center;color:var(--dim);font-size:20px;font-weight:900}
+.ucard.now{background:var(--blue-bg);border-color:var(--blue-line)}
+.ucard.now .lbl{color:var(--blue)}
+.ucard.now .val{color:var(--blue-d)}
+.ucard.goal{background:var(--green-bg);border-color:var(--green-line)}
+.ucard.goal .lbl{color:var(--green)}
+.ucard.goal .val{color:var(--green)}
+.ucard .qname{font-size:10.5px;color:var(--dim);height:15px;overflow:hidden}
+.arrowmid{display:flex;align-items:center;color:var(--dim-2);font-size:17px}
 
 .stage3d{position:relative;width:100%;height:clamp(320px,52vh,520px);
-  border-radius:18px;overflow:hidden;border:3px solid #fff;box-shadow:0 6px 20px rgba(90,110,80,.22);
-  background:linear-gradient(180deg,var(--sky1),var(--sky2));touch-action:none}
+  border-radius:var(--r);overflow:hidden;border:1px solid var(--line);
+  background:var(--sunken);touch-action:none}
 #cv{display:block;width:100%;height:100%}
 .overlay{position:absolute;inset:0;pointer-events:none}
-.hud-steps{position:absolute;top:8px;right:10px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.7);border-radius:99px;
-  padding:5px 12px;font-size:12.5px;font-weight:800;color:var(--brown-d)}
-.toast{position:absolute;left:50%;transform:translateX(-50%);top:48px;max-width:86%;
-  background:rgba(58,46,34,.88);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;
-  border-radius:12px;opacity:0;transition:opacity .2s;text-align:center;line-height:1.5}
+.hud-steps{position:absolute;top:10px;right:12px;background:rgba(255,255,255,.92);
+  border:1px solid var(--line);border-radius:99px;
+  padding:5px 12px;font-size:12px;font-weight:600;color:var(--txt)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);top:52px;max-width:86%;
+  background:rgba(23,23,23,.92);color:#fff;font-size:13px;font-weight:500;padding:9px 15px;
+  border-radius:var(--r-sm);opacity:0;transition:opacity .2s;text-align:center;line-height:1.6}
 .toast.on{opacity:1}
-.toast.good{background:rgba(47,139,47,.92)}
-.toast.info{background:rgba(23,120,163,.92)}
+.toast.good{background:rgba(30,110,80,.94)}
+.toast.info{background:rgba(35,85,140,.94)}
 
-/* ジョイスティック */
-.joy{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
-  width:112px;height:112px;border-radius:50%;background:rgba(255,255,255,.28);
-  border:4px solid rgba(255,255,255,.85);pointer-events:auto;touch-action:none}
-.joy .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
-  border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.28);transition:transform .06s}
+/* ジョイスティック — 盤面の外に置く（3D迷路に重ねると通路や単位の球が隠れるため） */
+.padrow{display:flex;align-items:center;gap:12px;margin-top:12px}
+.joy{position:relative;flex:none;width:104px;height:104px;border-radius:50%;
+  background:var(--sunken);border:1px solid var(--line);
+  pointer-events:auto;touch-action:none;cursor:grab}
+.joy:active{cursor:grabbing}
+.joy .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;
+  border-radius:50%;background:var(--knob);border:1px solid rgba(0,0,0,.06);
+  box-shadow:0 1px 3px rgba(0,0,0,.12);transition:transform .06s,background .12s}
+.joy:active .knob{background:var(--knob-d)}
 
-.distbar{margin-top:9px;background:rgba(255,255,255,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:2px solid rgba(255,255,255,.9);border-radius:14px;padding:9px 12px}
-.distbar .track{height:11px;background:#EFE7D6;border-radius:8px;overflow:hidden}
-.distbar .fill{height:100%;background:linear-gradient(90deg,#7FD97F,var(--green));transition:width .25s;border-radius:8px}
-.distbar .cap{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);margin-top:5px;font-weight:700}
+.distbar{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.distbar .track{height:6px;background:var(--sunken);border-radius:99px;overflow:hidden}
+.distbar .fill{height:100%;background:var(--green);transition:width .25s;border-radius:99px}
+.distbar .cap{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);margin-top:9px}
 
-.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px}
-.controls .btn{padding:9px 6px;font-size:13px}
-.legendbox{font-size:12px;color:var(--dim);margin-top:10px;line-height:2;font-weight:600;
-  background:rgba(255,255,255,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:2px solid rgba(255,255,255,.9);border-radius:14px;padding:10px 12px}
-.legendbox b{color:var(--txt)}
-.chip{display:inline-block;padding:2px 9px;border-radius:8px;font-weight:800;margin-right:3px;color:#fff}
-.chip.mul{background:var(--mul)} .chip.div{background:var(--div)}
-.chip.gate{background:var(--gate)} .chip.pow{background:#2E9BD6}
+.controls{flex:1;min-width:0;display:grid;grid-template-columns:1fr;gap:8px}
+/* 狭い画面では縦積み、余裕があれば横一列（縦積みのままだとPCで1つ600px超に伸びて間延びする） */
+@media (min-width:560px){ .controls{grid-template-columns:1fr 1fr 1fr} }
+.controls .btn{padding:10px 8px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px}
+/* キーボードのキー表示 */
+kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
+  border:1px solid var(--line-2);background:var(--sunken);color:var(--dim);
+  font-size:10.5px;font-weight:600;line-height:1.65;text-align:center;font-family:inherit}
+
+.legendbox{font-size:12px;color:var(--dim);margin-top:14px;line-height:2.15;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.legendbox b{color:var(--txt);font-weight:600}
+.chip{display:inline-block;padding:2px 8px;border-radius:7px;font-weight:600;margin-right:4px;font-size:12px}
+.chip.mul{background:var(--mul-bg);color:var(--mul)}
+.chip.div{background:var(--div-bg);color:var(--div)}
+.chip.pow{background:var(--pow-bg);color:var(--pow)}
+.chip.gate{background:var(--clay-bg);color:var(--gate)}
 
 /* ---- モーダル ---- */
-.modal{position:fixed;inset:0;background:rgba(58,46,34,.55);display:flex;align-items:center;justify-content:center;
+.modal{position:fixed;inset:0;background:rgba(28,25,23,.45);display:flex;align-items:center;justify-content:center;
   padding:16px;z-index:50}
-.modal .box{background:var(--card);border:3px solid #fff;border-radius:22px;padding:22px;
-  max-width:520px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.3)}
-.modal h3{margin:0 0 6px;font-size:21px;font-weight:900;color:var(--brown-d)}
-.modal .stars-big{font-size:34px;color:var(--yellow-d);letter-spacing:6px;text-align:center;margin:6px 0 8px}
-.modal .stars-big .off{color:#E3D9C6}
-.formula{background:#FFF8E8;border:2px solid #F2D48A;border-radius:12px;padding:12px;
-  text-align:center;font-size:17px;font-weight:800;color:var(--brown-d);margin:12px 0}
-.quiz .q{font-weight:900;margin:14px 0 8px}
-.quiz .ch{display:block;width:100%;text-align:left;margin-bottom:7px;background:#FBF6EA;
-  border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:700}
-.quiz .ch:hover{border-color:var(--brown-l)}
-.quiz .ch.ok{background:#E4F6E4;border-color:var(--green)}
-.quiz .ch.ng{background:#FDE7EC;border-color:var(--div)}
-.quiz .exp{font-size:13px;color:#5D5044;line-height:1.85;margin-top:8px;background:#FBF6EA;border-radius:12px;padding:10px;font-weight:600}
-.modal .row{display:flex;gap:9px;margin-top:16px}
-.modal .row .btn{flex:1;text-align:center}
-.howto p{line-height:1.95;font-size:14px;color:#4A3E32}
-.howto h4{margin:15px 0 5px;color:var(--green-d);font-size:14px;font-weight:900}
-.switch{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);cursor:pointer;font-weight:700}
-.switch input{width:40px;height:23px;appearance:none;background:#DDD3C0;border-radius:20px;position:relative;transition:.2s;cursor:pointer;flex:none}
+.modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;
+  max-width:540px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.16)}
+.modal h3{margin:0 0 10px;font-size:19px;font-weight:700;color:var(--txt)}
+.modal .stars-big{font-size:26px;color:var(--star);letter-spacing:8px;text-align:center;margin:12px 0 10px}
+.modal .stars-big .off{color:#E7E5E4}
+.formula{background:var(--sunken);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;
+  text-align:center;font-size:16px;font-weight:600;color:var(--txt);margin:16px 0}
+.quiz .q{font-weight:700;margin:18px 0 10px;font-size:14px}
+.quiz .ch{display:block;width:100%;text-align:left;margin-bottom:8px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;font-size:14px;font-weight:500;
+  transition:background .12s,border-color .12s}
+.quiz .ch:hover{background:var(--sunken);border-color:var(--line-2)}
+.quiz .ch kbd{margin-right:9px}
+.quiz .ch.ok{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
+.quiz .ch.ng{background:var(--clay-bg);border-color:var(--clay-line);color:var(--clay)}
+.quiz .exp{font-size:13px;color:var(--dim);line-height:1.9;margin-top:10px;background:var(--sunken);
+  border-radius:var(--r-sm);padding:14px}
+.modal .row{display:flex;gap:8px;margin-top:20px}
+.modal .row .btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.howto p{line-height:2;font-size:13.5px;color:var(--dim)}
+.howto p b{color:var(--txt);font-weight:600}
+.howto h4{margin:20px 0 6px;color:var(--txt);font-size:13.5px;font-weight:700}
+
+.switch{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--txt);cursor:pointer;font-weight:500}
+.switch input{width:38px;height:22px;appearance:none;background:var(--line-2);border-radius:99px;position:relative;transition:.2s;cursor:pointer;flex:none}
 .switch input:checked{background:var(--green)}
-.switch input::after{content:'';position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
-.switch input:checked::after{left:19px}
-.switch .sub{display:block;font-size:11.5px;color:var(--dim);font-weight:600}
+.switch input::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch input:checked::after{left:18px}
+.switch .sub{display:block;font-size:11.5px;color:var(--dim);font-weight:400;margin-top:3px}
 
 .masked{filter:blur(8px)}
-@media (max-width:420px){ .joy{width:100px;height:100px} .joy .knob{width:50px;height:50px;margin:-25px 0 0 -25px} }
+@media (max-width:420px){
+  .wrap{padding:16px 12px 32px}
+  .joy{width:92px;height:92px} .joy .knob{width:46px;height:46px;margin:-23px 0 0 -23px}
+  .controls .btn{padding:9px 6px;font-size:12.5px}
+  kbd{min-width:1.4em;padding:0 4px}
+}
 </style>
 </head>
 <body>
@@ -176,7 +226,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 
   <!-- ================= タイトル ================= -->
   <section id="screen-title">
-    <div class="sky-hero">
+    <div class="hero">
       <div class="logo">単位迷宮</div>
       <div class="logo-sub">DIMENSION LABYRINTH</div>
       <p class="tagline">
@@ -190,9 +240,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
       <button class="btn" id="btn-howto">あそびかた</button>
     </div>
     <div class="eqdemo">
-      kg → <span class="t" style="background:#7E57C2">×m</span> → kg·m →
-      <span class="t" style="background:#EC5B8A">÷s</span><span class="t" style="background:#EC5B8A">÷s</span>
-      → kg·m/s² = <span style="color:#17A398">N</span>
+      kg → <span class="t mul">×m</span> → kg·m →
+      <span class="t div">÷s</span><span class="t div">÷s</span>
+      → kg·m/s² = <span class="t goal">N</span>
       <small>F = ma。公式を覚えていなくても、単位を組み立てれば答えの形が見える。</small>
     </div>
   </section>
@@ -209,15 +259,19 @@ button{font-family:inherit;color:inherit;cursor:pointer}
       <label class="switch"><input type="checkbox" id="maskmode">
         <span>記憶モード<span class="sub">手持ちの単位をぼかす。頭の中で計算する練習になる</span></span></label>
       <label class="switch" style="margin-top:10px"><input type="checkbox" id="mute"><span>効果音</span></label>
+      <div class="setting-row">
+        <div class="setting-lbl">迷路の壁の色<span class="sub">白い壁が背景に溶けて見えないときは変えてください</span></div>
+        <div class="swatches" id="wallcolors"></div>
+      </div>
     </div>
   </section>
 
   <!-- ================= ゲーム ================= -->
   <section id="screen-game" class="hidden">
     <div class="gamebar">
-      <button class="icon-btn" id="btn-tomenu">🏠</button>
+      <button class="icon-btn" id="btn-tomenu" title="ステージ選択にもどる（Esc）">🏠</button>
       <div class="level-pill" id="level-pill">Level 1-1</div>
-      <button class="icon-btn" id="btn-tip">💡</button>
+      <button class="icon-btn" id="btn-tip" title="このステージのヒント（T）">💡</button>
     </div>
     <div class="story" id="stage-story"></div>
 
@@ -240,7 +294,6 @@ button{font-family:inherit;color:inherit;cursor:pointer}
       <div class="overlay">
         <div class="hud-steps">手数 <span id="steps">0</span> / 最短 <span id="par">-</span></div>
         <div class="toast" id="msg"></div>
-        <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
       </div>
     </div>
 
@@ -249,10 +302,13 @@ button{font-family:inherit;color:inherit;cursor:pointer}
       <div class="cap"><span>EXIT の単位との「次元距離」</span><span id="dist-num"></span></div>
     </div>
 
-    <div class="controls">
-      <button class="btn sm" id="btn-undo">↩ もどす</button>
-      <button class="btn sm" id="btn-reset">やり直し</button>
-      <button class="btn sm" id="btn-hint">💡 段階ヒント</button>
+    <div class="padrow">
+      <div class="joy" id="joy" title="ドラッグで移動（キーボードは矢印キー・WASD）"><div class="knob" id="knob"></div></div>
+      <div class="controls">
+        <button class="btn sm" id="btn-undo">↩ もどす<kbd>Z</kbd></button>
+        <button class="btn sm" id="btn-reset">やり直し<kbd>R</kbd></button>
+        <button class="btn sm" id="btn-hint">💡 段階ヒント<kbd>H</kbd></button>
+      </div>
     </div>
 
     <div class="legendbox">
@@ -262,7 +318,8 @@ button{font-family:inherit;color:inherit;cursor:pointer}
       <span class="chip gate">🔒</span>関門（条件を満たす単位でないと通れない）<br>
       <b>後戻りできない。</b> 通った道は崩れて穴になる。手持ちが増えると球が大きくなり、
       同じ単位で割ると<b>相殺</b>して小さくなる。<br>
-      <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD　　<b>Z</b>=もどす　<b>R</b>=やり直し
+      <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD<br>
+      <b>キーボード</b>　<kbd>Z</kbd>もどす　<kbd>R</kbd>やり直し　<kbd>H</kbd>段階ヒント　<kbd>T</kbd>ステージのヒント　<kbd>Esc</kbd>ステージ選択
     </div>
   </section>
 </div>
@@ -1218,15 +1275,45 @@ var R3 = (function () {
   function clearCaches() { gradCache = {}; sphereCache = {}; shadowPath = null; }
 
   var COL = {
-    sky1: '#7FCDF0', sky2: '#CDEEFF',
-    grass: '#6FBE73', grass2: '#67B46B', grassEdge: '#7A5C3A',
-    wallCap: '#E8C08A', wallS: '#C08A52', wallN: '#9A6A3C', wallE: '#B07C48', wallW: '#8F6034',
-    shadow: 'rgba(58,66,110,.30)',
-    pit: '#6A5B45', pitTop: '#7A6A52',
-    gateLock: '#E04B4B', gateOpen: '#43A047',
-    goal: '#17A398', goalTop: '#26C6BA',
-    start: '#EFE2C0'
+    sky1: '#F2F1EF', sky2: '#FAFAF9',
+    grass: '#EAE6DF', grass2: '#E3DFD7', grassEdge: '#CEC8BE',
+    wallCap: '#FFFFFF', wallS: '#EFECE7', wallN: '#CFCAC2', wallE: '#E2DED7', wallW: '#C5BFB6',
+    shadow: 'rgba(72,66,58,.20)',
+    pit: '#978F86', pitTop: '#A69E95',
+    gateLock: '#C05B45', gateOpen: '#3E9E76',
+    goal: '#2E8B72', goalTop: '#63B99F',
+    start: '#E4EDF8'
   };
+
+  /* ---------- 壁の色 ----------
+     白い模型のままだと背景の白と壁が同化して見づらい。
+     色は1つの基準色から5面ぶんの陰影を機械的に作る（手で5色決めると陰影が破綻するため）。
+     半透明にしてあるので、壁の向こうの床と通路が透けて見え、迷路全体の形も読み取りやすい。 */
+  var WALL_COLORS = [
+    { id: 'emerald',  name: 'エメラルド',   hex: '#4FC0A8' },
+    { id: 'sky',      name: 'スカイ',       hex: '#6DB3E8' },
+    { id: 'lavender', name: 'ラベンダー',   hex: '#A99BE3' },
+    { id: 'apricot',  name: 'アプリコット', hex: '#EFB183' },
+    { id: 'rose',     name: 'ローズ',       hex: '#E79BAF' },
+    { id: 'stone',    name: 'ストーン',     hex: '#C6C2BB' }
+  ];
+  var WALL_ALPHA = 0.78;
+  function shiftHex(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    var g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt));
+    var b = Math.max(0, Math.min(255, (n & 255) + amt));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+  function setWallColor(hex) {
+    COL.wallCap = shiftHex(hex, 38);   // 天面がいちばん明るい
+    COL.wallS   = shiftHex(hex, 12);   // 手前
+    COL.wallE   = shiftHex(hex, -6);
+    COL.wallN   = shiftHex(hex, -26);  // 奥
+    COL.wallW   = shiftHex(hex, -38);
+    clearCaches();
+  }
+  setWallColor(WALL_COLORS[0].hex);
   // 演算マスの色相（球体の色）
   var HUE = { mul: 268, div: 335, pow: 200 };
 
@@ -1274,7 +1361,7 @@ var R3 = (function () {
       if (q.x < minx) minx = q.x; if (q.x > maxx) maxx = q.x;
       if (q.y < miny) miny = q.y; if (q.y > maxy) maxy = q.y;
     }
-    var padX = W * 0.05, padTop = H * 0.09, padBot = H * 0.18;
+    var padX = W * 0.05, padTop = H * 0.08, padBot = H * 0.09;
     var sc = Math.min((W - padX * 2) / (maxx - minx), (H - padTop - padBot) / (maxy - miny));
     return { sc: sc, minx: minx, maxx: maxx, miny: miny, maxy: maxy, padTop: padTop, padBot: padBot, C: P.C, sin: P.sin, cos: P.cos };
   }
@@ -1314,6 +1401,7 @@ var R3 = (function () {
   }
   /** 直方体（薄い壁パネルにも使う） */
   function slab(x0, x1, z0, z1, y1) {
+    ctx.save(); ctx.globalAlpha = WALL_ALPHA;
     var b = {
       nw: pr(x0, 0, z0), ne: pr(x1, 0, z0), se: pr(x1, 0, z1), sw: pr(x0, 0, z1)
     }, t = {
@@ -1336,6 +1424,7 @@ var R3 = (function () {
     ctx.moveTo(t.nw.x, t.nw.y); ctx.lineTo(t.ne.x, t.ne.y); ctx.lineTo(t.se.x, t.se.y); ctx.lineTo(t.sw.x, t.sw.y);
     ctx.closePath();
     ctx.lineWidth = Math.max(0.8, t.nw.s * 0.035); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.stroke();
+    ctx.restore();
   }
 
   /** セルの中心座標（範囲外でも計算できる＝外周の壁に使う） */
@@ -1391,10 +1480,10 @@ var R3 = (function () {
   function pit(st, col, row) {
     var top = corners(st, col, row, 0, 0.5), bot = corners(st, col, row, -0.17, 0.5);
     quad(top.sw, top.se, bot.se, bot.sw, COL.pit);
-    quad(top.se, top.ne, bot.ne, bot.se, '#5B4E3C');
-    quad(top.nw, top.sw, bot.sw, bot.nw, '#5B4E3C');
-    quad(bot.nw, bot.ne, bot.se, bot.sw, '#4C4132');
-    ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = '#3E3527'; ctx.lineWidth = 1.1;
+    quad(top.se, top.ne, bot.ne, bot.se, '#8B847B');
+    quad(top.nw, top.sw, bot.sw, bot.nw, '#8B847B');
+    quad(bot.nw, bot.ne, bot.se, bot.sw, '#7C756C');
+    ctx.save(); ctx.globalAlpha = .35; ctx.strokeStyle = '#5E574F'; ctx.lineWidth = 1.1;
     ctx.beginPath(); ctx.moveTo(top.nw.x, top.nw.y); ctx.lineTo(top.ne.x, top.ne.y);
     ctx.lineTo(top.se.x, top.se.y); ctx.lineTo(top.sw.x, top.sw.y); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
@@ -1448,7 +1537,7 @@ var R3 = (function () {
   function sphere(pt, rWorld, hue, alpha, sat) {
     var r = Math.max(4, pt.s * rWorld);
     var R = Math.max(4, Math.round(r / 1.5) * 1.5);      // 1.5pxごとに丸めてキャッシュ数を抑える
-    var spr = sphereSprite(Math.round(hue), sat || 88, R);
+    var spr = sphereSprite(Math.round(hue), sat || 72, R);
     if (!spr) return;
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -1463,14 +1552,14 @@ var R3 = (function () {
     ctx.save(); ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, 6.2832); ctx.fillStyle = g; ctx.fill(); ctx.restore();
   }
   function groundShadow(pt, rWorld, a) {
-    ctx.save(); ctx.globalAlpha = a === undefined ? 0.22 : a; ctx.fillStyle = '#1b3a1b';
+    ctx.save(); ctx.globalAlpha = a === undefined ? 0.22 : a; ctx.fillStyle = '#4B443C';
     ctx.beginPath(); ctx.ellipse(pt.x, pt.y, pt.s * rWorld, pt.s * rWorld * 0.5, 0, 0, 6.2832); ctx.fill();
     ctx.restore();
   }
   function bigText(x, y, text, fs, fill, outline) {
     ctx.font = '800 ' + fs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = Math.max(2.5, fs * 0.3); ctx.strokeStyle = outline || 'rgba(40,50,40,.9)';
+    ctx.lineWidth = Math.max(2, fs * 0.2); ctx.strokeStyle = outline || 'rgba(58,53,47,.9)';
     ctx.lineJoin = 'round'; ctx.strokeText(text, x, y);
     ctx.fillStyle = fill; ctx.fillText(text, x, y);
   }
@@ -1517,7 +1606,7 @@ var R3 = (function () {
         }
       } else if (f.k === 'text') {
         ctx.globalAlpha = t < 0.75 ? 1 : (1 - t) * 4;
-        bigText(p.x, p.y - p.s * 0.9 * t, f.s, Math.max(12, Math.min(30, p.s * 0.36)), f.color, 'rgba(30,30,30,.85)');
+        bigText(p.x, p.y - p.s * 0.9 * t, f.s, Math.max(12, Math.min(30, p.s * 0.36)), f.color, f.outline || 'rgba(255,255,255,.92)');
       }
       ctx.restore();
     }
@@ -1575,9 +1664,9 @@ var R3 = (function () {
         quads.push({ col: x, row: y, p: [pr(X - .5, 0, Z - .5), pr(X + .5, 0, Z - .5), pr(X + .5, 0, Z + .5), pr(X - .5, 0, Z + .5)] });
         var vI = S.visited[y * st.w + x];
         if (vI && !(x === S.cx && y === S.cy)) { pit(st, x, y); continue; }
-        if (S.reach[y * st.w + x]) plate(st, x, y, 'rgba(255,246,170,.7)', 0.14);
+        if (S.reach[y * st.w + x]) plate(st, x, y, 'rgba(120,162,212,.20)', 0.14);
         if (cc.t === 'start') plate(st, x, y, COL.start, 0.2);
-        if (cc.t === 'goal') plate(st, x, y, ready ? '#5FE6D8' : COL.goalTop, 0.12);
+        if (cc.t === 'goal') plate(st, x, y, ready ? '#7FD3BC' : COL.goalTop, 0.12);
       }
       // 壁パネル（奥→手前）
       for (var k = 0; k < rows2[y].hN.length; k++) { var q1 = rows2[y].hN[k]; slab(q1.x0, q1.x1, q1.z0, q1.z1, WALLH); }
@@ -1606,8 +1695,8 @@ var R3 = (function () {
           bigText(sp.x, sp.y, tileLabel(cc), Math.max(11, Math.min(27, sp.s * 0.32)), '#ffffff', 'rgba(38,18,52,.85)');
           blockers.push({ cx: sp.x, cy: sp.y, w: sp.s * 0.80, h: sp.s * 0.80 });
         } else if (cc.t === 'goal') {
-          labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#0FA35A' : '#0E8C82', fg: '#fff', sc: 0.26 });
-          labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#DFFFF6' : '#ffffff' });
+          labels.push({ k: 'chip', p: pr(pX, 1.02, pZ), t: uniStr(st.goalV), bg: ready ? '#2E7D5B' : '#2E8B72', fg: '#fff', sc: 0.26 });
+          labels.push({ k: 'text', p: pr(pX, 1.44, pZ), t: 'EXIT', sc: 0.34, fg: ready ? '#2E7D5B' : '#44403C' });
         }
       }
       if (Math.round(S.py) === y) {
@@ -1623,10 +1712,10 @@ var R3 = (function () {
           var bfs = Math.max(10, Math.min(25, bp.s * 0.27));
           ctx.font = '800 ' + bfs.toFixed(1) + 'px "Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif';
           if (ctx.measureText(btxt).width < bp.s * brw * 1.7) {
-            bigText(bp.x, bp.y, btxt, bfs, '#ffffff', 'rgba(88,54,0,.92)');
+            bigText(bp.x, bp.y, btxt, bfs, '#ffffff', 'rgba(60,54,45,.92)');
             blockers.push({ cx: bp.x, cy: bp.y, w: bp.s * brw * 2, h: bp.s * brw * 2 });
           } else {
-            labels.push({ k: 'chip', p: pr(bX, 0.16 + brw * 2, bZ), t: btxt, bg: '#B5761A', fg: '#fff', sc: 0.26, pin: 1 });
+            labels.push({ k: 'chip', p: pr(bX, 0.16 + brw * 2, bZ), t: btxt, bg: '#57514A', fg: '#fff', sc: 0.26, pin: 1 });
             blockers.push({ cx: bp.x, cy: bp.y, w: bp.s * brw * 2, h: bp.s * brw * 2 });
           }
         }
@@ -1681,7 +1770,7 @@ var R3 = (function () {
     ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(text, L.cx, L.cy + fs * 0.04);
   }
-  function outlineText(L, text, fill) { bigText(L.cx, L.cy, text, L.fs, fill, 'rgba(40,60,40,.9)'); }
+  function outlineText(L, text, fill) { bigText(L.cx, L.cy, text, L.fs, fill, L.outline || 'rgba(255,255,255,.92)'); }
 
   function shade(hex, amt) {
     var n = parseInt(hex.slice(1), 16);
@@ -1709,7 +1798,7 @@ var R3 = (function () {
     // 光らせすぎない。まわりのにじみは弱く、中心の白い芯は入れない。
     // 主人公だと分かるのは「金色であること」と「地面の影」で足りる
     halo(p1, rw * 1.35, 'hsla(' + hue + ',95%,74%,.16)');
-    sphere(p1, rw, hue, 0.82, 88);
+    sphere(p1, rw, hue, 0.82, 72);
   }
 
   /* ---------- クリック → セル ---------- */
@@ -1732,7 +1821,8 @@ var R3 = (function () {
 
   return {
     setCanvas: setCanvas, resize: resize, setupCamera: setupCamera, draw: draw, pick: pick,
-    uniStr: uniStr, sup: sup, mapDir: mapDir, addFX: addFX, hasFX: hasFX, world: world, ballRadius: ballRadius
+    uniStr: uniStr, sup: sup, mapDir: mapDir, addFX: addFX, hasFX: hasFX, world: world, ballRadius: ballRadius,
+    wallColors: WALL_COLORS, setWallColor: setWallColor
   };
 })();
 
@@ -1950,7 +2040,7 @@ var R3 = (function () {
     var st = G.stage;
     if (nx >= 0 && ny >= 0 && nx < st.w && ny < st.h) {
       var w = R3.world(st, nx, ny, 0.35);
-      R3.addFX({ k: 'ring', X: w.X, Y: 0.3, Z: w.Z, color: '#FF6B6B', r0: 0.5, r1: 0.15, dur: 280 });
+      R3.addFX({ k: 'ring', X: w.X, Y: 0.3, Z: w.Z, color: '#C05B45', r0: 0.5, r1: 0.15, dur: 280 });
     }
   }
   function tryMove(dx, dy) {
@@ -1981,23 +2071,23 @@ var R3 = (function () {
         G.combo++; G.cancels++;
         SE.cancel(G.combo);
         G.pop = { t0: performance.now(), dur: 340, k: 'shrink' };
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: '#ffffff', r0: 0.15, r1: 1.25, dur: 520 });
-        R3.addFX({ k: 'burst', X: w.X, Y: 0.45, Z: w.Z, color: '#FFF3B0', n: 12, seed: 0.3, dur: 620 });
-        R3.addFX({ k: 'text', X: w.X, Y: 0.9, Z: w.Z, s: G.combo > 1 ? '相殺！ ×' + G.combo : '相殺！', color: '#FFE96B', dur: 900 });
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: '#D9A521', r0: 0.15, r1: 1.25, dur: 520 });
+        R3.addFX({ k: 'burst', X: w.X, Y: 0.45, Z: w.Z, color: '#E3B45A', n: 12, seed: 0.3, dur: 620 });
+        R3.addFX({ k: 'text', X: w.X, Y: 0.9, Z: w.Z, s: G.combo > 1 ? '相殺！ ×' + G.combo : '相殺！', color: '#A8761E', dur: 900 });
       } else {
         G.combo = 0;
         SE.absorb();
         G.pop = { t0: performance.now(), dur: 300, k: 'grow' };
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: 'rgba(255,255,255,.8)', r0: 0.5, r1: 0.1, dur: 260 });
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.35, Z: w.Z, color: 'rgba(120,113,108,.75)', r0: 0.5, r1: 0.1, dur: 260 });
       }
       if (da < db) {
         // 相殺したときは低い「近づいた音」を重ねない（高音の快感を濁さないため）。
         // 緑のリングは出すので「正しい方向だ」という情報は失われない
         if (!didCancel) SE.closer();
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#7BEF7B', r0: 0.2, r1: 1.0, dur: 480 });
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#3E9E76', r0: 0.2, r1: 1.0, dur: 480 });
       } else if (da > db) {
         SE.farther();
-        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#FF8A8A', r0: 0.2, r1: 0.9, dur: 420 });
+        R3.addFX({ k: 'ring', X: w.X, Y: 0.06, Z: w.Z, color: '#C05B45', r0: 0.2, r1: 0.9, dur: 420 });
       }
       var label = c.t === 'op' ? (c.op === '*' ? '×' : '÷') + c.u : (c.k === 0.5 ? '√' : '2乗');
       msg = R3.uniStr(before) + '　' + label + '　→　' + R3.uniStr(G.hand);
@@ -2086,12 +2176,12 @@ var R3 = (function () {
       (G.masked ? '／🧠記憶モード' : '') + '</div>' +
       '<div class="formula">' + st.formula + '</div>' +
       '<div class="quiz" id="quizbox"><div class="q">' + qz.q + '</div>' +
-      qz.choices.map(function (c, i) { return '<button class="ch" data-i="' + i + '">' + c + '</button>'; }).join('') +
+      qz.choices.map(function (c, i) { return '<button class="ch" data-i="' + i + '"><kbd>' + (i + 1) + '</kbd> ' + c + '</button>'; }).join('') +
       '<div class="exp hidden" id="quizexp">' + qz.exp + '</div></div>' +
       '<div class="row">' +
-      '<button class="btn" id="c-retry">もう一度</button>' +
-      '<button class="btn" id="c-select">ステージ選択</button>' +
-      (next ? '<button class="btn primary" id="c-next">つぎへ</button>' : '') +
+      '<button class="btn" id="c-retry">もう一度<kbd>R</kbd></button>' +
+      '<button class="btn" id="c-select">ステージ選択<kbd>Esc</kbd></button>' +
+      (next ? '<button class="btn primary" id="c-next">つぎへ<kbd>Enter</kbd></button>' : '') +
       '</div>';
 
     var answered = false;
@@ -2121,14 +2211,31 @@ var R3 = (function () {
   }
 
   /* ---------- 入力 ---------- */
+  function showTip() { if (G && G.stage) toast('💡 ' + G.stage.tip, 'info', 7000); }
+
   document.addEventListener('keydown', function (e) {
     if ($('screen-game').classList.contains('hidden')) return;
     if (!$('modal-clear').classList.contains('hidden')) return;
+    if (!$('modal-howto').classList.contains('hidden')) return;
     var map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
                 w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
     if (map[e.key]) { e.preventDefault(); move(map[e.key][0], map[e.key][1]); }
-    else if (e.key === 'z' || e.key === 'Z') undo();
-    else if (e.key === 'r' || e.key === 'R') reset();
+    // 画面のボタンと同じことをキーでもできるようにする（PCではマウスに持ち替えずに済む）
+    else if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); undo(); }
+    else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); reset(); }
+    else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); hint(); }
+    else if (e.key === 't' || e.key === 'T') { e.preventDefault(); showTip(); }
+    else if (e.key === 'Escape') { e.preventDefault(); renderSelect(); show('select'); }
+  });
+
+  // クリア画面もキーだけで進められるようにする
+  document.addEventListener('keydown', function (e) {
+    if ($('modal-clear').classList.contains('hidden')) return;
+    var chs = $('quizbox') ? $('quizbox').querySelectorAll('.ch') : [];
+    if (e.key === 'Enter') { e.preventDefault(); var b = $('c-next') || $('c-retry'); if (b) b.click(); }
+    else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); if ($('c-retry')) $('c-retry').click(); }
+    else if (e.key === 'Escape') { e.preventDefault(); if ($('c-select')) $('c-select').click(); }
+    else if (e.key >= '1' && e.key <= '9' && chs[+e.key - 1]) { e.preventDefault(); chs[+e.key - 1].click(); }
   });
 
   var joy = { on: false, cx: 0, cy: 0, dir: null, timer: null };
@@ -2201,7 +2308,7 @@ var R3 = (function () {
     $('btn-undo').onclick = undo;
     $('btn-reset').onclick = reset;
     $('btn-hint').onclick = hint;
-    $('btn-tip').onclick = function () { toast('💡 ' + G.stage.tip, 'info', 7000); };
+    $('btn-tip').onclick = showTip;
 
     var j = $('joy');
     j.addEventListener('touchstart', joyStart, { passive: false });
@@ -2218,6 +2325,24 @@ var R3 = (function () {
     cvEl.addEventListener('mousedown', boardDown);
     cvEl.addEventListener('mouseup', boardUp);
 
+    // 壁の色（白い壁が背景と同化して見えない、という指摘への対応）
+    var WC = R3.wallColors, wcbox = $('wallcolors');
+    function applyWall(id) {
+      var hit = WC[0];
+      for (var i = 0; i < WC.length; i++) if (WC[i].id === id) hit = WC[i];
+      R3.setWallColor(hit.hex);
+      save.wallColor = hit.id; persist();
+      var bs = wcbox.querySelectorAll('.sw');
+      for (i = 0; i < bs.length; i++) bs[i].className = 'sw' + (bs[i].getAttribute('data-id') === hit.id ? ' on' : '');
+    }
+    wcbox.innerHTML = WC.map(function (c) {
+      return '<button class="sw" data-id="' + c.id + '" title="' + c.name + '" aria-label="' + c.name +
+        '" style="background:' + c.hex + '"></button>';
+    }).join('');
+    Array.prototype.forEach.call(wcbox.querySelectorAll('.sw'), function (b) {
+      b.onclick = function () { applyWall(b.getAttribute('data-id')); };
+    });
+    applyWall(save.wallColor || WC[0].id);
     var mm = $('maskmode');
     mm.checked = !!save.maskMode;
     mm.onchange = function () { save.maskMode = mm.checked; persist(); if (G) { G.masked = mm.checked; update('', ''); } };
