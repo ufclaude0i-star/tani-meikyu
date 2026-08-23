@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>単位迷宮 — 事前・事後テスト一式</title>
+<style>
+  @page { size: A4; margin: 15mm 15mm 16mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: #1C1917; background: #fff;
+    font-family: "Yu Gothic UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+    font-size: 10pt; line-height: 1.8; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1 { font-size: 17pt; margin: 0 0 1mm; font-weight: 700; letter-spacing: .04em; }
+  .sub { font-size: 8.5pt; color: #A8A29E; letter-spacing: .18em; font-weight: 600; margin-bottom: 5mm; }
+  h2 { font-size: 12pt; font-weight: 700; margin: 6mm 0 2.5mm; padding-bottom: 1.5mm; border-bottom: 1px solid #E7E5E4; }
+  h3 { font-size: 10pt; font-weight: 700; margin: 4mm 0 1mm; }
+  p { margin: 0 0 2.5mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
+  li { margin-bottom: 1.2mm; }
+  .mono, code { font-family: Consolas, "Courier New", monospace; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 9pt; }
+  th, td { border: 1px solid #D6D3D1; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
+  th { background: #F5F5F4; font-weight: 700; }
+  td.n, th.n { text-align: center; white-space: nowrap; }
+  .box { border: 1px solid #E7E5E4; border-radius: 2.5mm; padding: 3.5mm 4.5mm; background: #FAFAF9; margin: 2mm 0 4mm; }
+  .box.warn { background: #FDF6EC; border-color: #EEDFBE; }
+  .box.hi { background: #EFF9F6; border-color: #C6E2D1; }
+  .q { page-break-inside: avoid; margin-bottom: 4mm; }
+  .q .head { font-weight: 700; margin-bottom: 1mm; }
+  .q .ch { display: flex; flex-wrap: wrap; gap: 2mm 4mm; padding-left: 6mm; }
+  .q .ch span { border: 1px solid #E7E5E4; border-radius: 2mm; padding: .8mm 3mm; font-size: 9.5pt; min-width: 30mm; }
+  .ans-line { border-bottom: 1px solid #A8A29E; display: inline-block; width: 34mm; }
+  .pb { page-break-before: always; }
+  .foot { margin-top: 7mm; padding-top: 2.5mm; border-top: 1px solid #E7E5E4; font-size: 8pt; color: #A8A29E; }
+  .name { display: flex; gap: 6mm; margin-bottom: 4mm; font-size: 9.5pt; }
+  .name span { border-bottom: 1px solid #D6D3D1; flex: 1; padding-bottom: 1mm; }
+  .tag { display: inline-block; font-size: 7.5pt; font-weight: 700; border-radius: 1.5mm;
+         padding: .3mm 1.8mm; margin-left: 2mm; vertical-align: 1mm; }
+  .tag.t { background: #EFF9F6; color: #1B7A67; border: 1px solid #C6E2D1; }
+</style>
+</head>
+<body>
+
+<h1>単位迷宮 — 事前・事後テスト一式</h1>
+<div class="sub">効果測定用　／　実施者向け手引き＋問題＋解答＋記録シート</div>
+
+<h2>0. これは何をするものか</h2>
+<p>
+「楽しく学べます」という主張には根拠がありません。
+<b>プレイ前とプレイ後で、単位に関する問題の正答率がどれだけ変わるか</b>を実際に測り、
+数字で示すための道具です。所要時間は 1人あたり <b>約35分</b>（事前5分＋プレイ20分＋事後5分＋予備5分）。
+</p>
+
+<div class="box hi">
+  <b>目標：10人に実施</b>し、「正答率が平均 ◯% → ◯% に上がった」と書けるようにする。<br>
+  10人集まらない場合でも、<b>人数を正直に書けば</b>データとしての価値は十分あります（例：「n = 6」）。
+</div>
+
+<h2>1. 実施手順</h2>
+<ol>
+  <li><b>事前テスト（5分）</b><br>
+      次ページの問題を印刷して配り、<b>何も説明せずに</b>解いてもらいます。
+      「分からなければ空欄で構わない」と伝えてください。当てずっぽうを促すと測定がぼやけます。</li>
+  <li><b>プレイ（20分）</b><br>
+      <span class="mono">https://ufclaude0i-star.github.io/tani-meikyu/</span> を開いてもらい、
+      Level 1-1 から順に遊んでもらいます。<b>遊び方の説明はしません</b>（アプリ内の「あそびかた」で足ります）。
+      20分で切り上げ、どのステージまで進んだかを記録シートに書きます。</li>
+  <li><b>事後テスト（5分）</b><br>
+      <b>同じ問題</b>をもう一度解いてもらいます。事前の答案は返さないでください。</li>
+  <li><b>採点</b><br>
+      解答（4ページ）を見て 10点満点で採点し、記録シートに書き込みます。</li>
+</ol>
+
+<div class="box warn">
+  <b>記録しておくべきこと（正直に書くほど強い）</b>
+  <ul style="margin-bottom:0">
+    <li>実施日・人数・学年（例：高校1〜2年 10名）</li>
+    <li>事前・事後それぞれの点数（1人ずつ）</li>
+    <li>20分で到達したステージ</li>
+    <li><b>同じ問題を事前・事後に使っている</b>こと。この方法は簡便な代わりに、
+        「2回目だから解けた」という効果を分離できません。<b>この限界を書いたうえで数字を出すほうが、
+        隠すより信頼されます。</b>問9・問10 は<b>ゲームに登場しない量</b>を選んであるので、
+        ここが伸びていれば「覚えた」ではなく「組み立てられるようになった」根拠になります。</li>
+  </ul>
+</div>
+
+<h2>2. 集計のしかた</h2>
+<ul>
+  <li><b>正答率</b>＝（全員の合計点）÷（10点 × 人数）× 100</li>
+  <li><b>伸び</b>＝ 事後の正答率 − 事前の正答率</li>
+  <li><b>転移問題（問9・問10）の正答率</b>も別に出す。ここがこの作品の主張の核心です。</li>
+</ul>
+<p>
+作品概要には、たとえば次のように書けます。<br>
+<span class="mono">「高校1〜2年 10名に20分プレイしてもらい、同一の単位10問で前後比較したところ、
+正答率は 42% → 78% に上がった。特にゲームに登場しない量（ばね定数・密度）の
+次元を組み立てる2問は 15% → 65% だった。」</span>
+</p>
+
+<div class="pb"></div>
+<h1 style="font-size:15pt">単位のテスト（全10問）</h1>
+<div class="name">
+  <span>氏名</span><span>学年</span><span>実施　□ 事前　□ 事後</span>
+</div>
+<p style="font-size:9.5pt;color:#78716C">
+  もっとも適切なものを1つ選び、記号を書いてください。分からない問題は空欄で構いません。<br>
+  <b>kg</b>＝キログラム、<b>m</b>＝メートル、<b>s</b>＝秒、<b>A</b>＝アンペア です。
+</p>
+
+<div class="q"><div class="head">問1　「速さ」の単位はどれですか。</div>
+<div class="ch"><span>ア　m·s</span><span>イ　m/s</span><span>ウ　m/s²</span><span>エ　s/m</span></div></div>
+
+<div class="q"><div class="head">問2　「加速度」の単位はどれですか。</div>
+<div class="ch"><span>ア　m/s</span><span>イ　m/s²</span><span>ウ　m²/s</span><span>エ　kg·m/s</span></div></div>
+
+<div class="q"><div class="head">問3　力の単位 N（ニュートン）を kg・m・s だけで表すとどれですか。</div>
+<div class="ch"><span>ア　kg·m/s</span><span>イ　kg·m/s²</span><span>ウ　kg·m²/s²</span><span>エ　kg/s²</span></div></div>
+
+<div class="q"><div class="head">問4　エネルギーの単位 J（ジュール）を kg・m・s だけで表すとどれですか。</div>
+<div class="ch"><span>ア　kg·m/s²</span><span>イ　kg·m²/s²</span><span>ウ　kg·m²/s³</span><span>エ　kg/(m·s²)</span></div></div>
+
+<div class="q"><div class="head">問5　圧力の単位 Pa（パスカル）を kg・m・s だけで表すとどれですか。<br>
+  <span style="font-weight:400;font-size:9pt;color:#78716C">（ヒント：圧力＝力÷面積）</span></div>
+<div class="ch"><span>ア　kg/(m·s²)</span><span>イ　kg·m/s²</span><span>ウ　kg/(m²·s²)</span><span>エ　kg·m²/s²</span></div></div>
+
+<div class="q"><div class="head">問6　次のうち、<b>単位の上で成り立たない</b>（次元が合わない）式はどれですか。<br>
+  <span style="font-weight:400;font-size:9pt;color:#78716C">v は速さ、a は加速度、t は時間、x は距離です。</span></div>
+<div class="ch"><span>ア　v = a t</span><span>イ　x = v t</span><span>ウ　v = a t²</span><span>エ　x = ½ a t²</span></div></div>
+
+<div class="q"><div class="head">問7　次のうち、<b>単位を持たない量（無次元量）</b>はどれですか。</div>
+<div class="ch"><span>ア　速さ</span><span>イ　摩擦係数</span><span>ウ　加速度</span><span>エ　力</span></div></div>
+
+<div class="q"><div class="head">問8　電気量の単位 C（クーロン）は、電流 A と時間 s を使うとどう表せますか。</div>
+<div class="ch"><span>ア　A/s</span><span>イ　A·s</span><span>ウ　A/s²</span><span>エ　A²·s</span></div></div>
+
+<div class="q"><div class="head">問9　ばねの力は <span class="mono">F = k x</span>（F：力、x：伸び）と書けます。
+  ばね定数 k の単位を kg・m・s で表すとどれですか。<span class="tag t">転移</span></div>
+<div class="ch"><span>ア　kg/s²</span><span>イ　kg·m/s²</span><span>ウ　kg·m²/s²</span><span>エ　kg/(m·s²)</span></div></div>
+
+<div class="q"><div class="head">問10　密度は「質量 ÷ 体積」です。密度の単位はどれですか。<span class="tag t">転移</span></div>
+<div class="ch"><span>ア　kg·m³</span><span>イ　kg/m²</span><span>ウ　kg/m³</span><span>エ　m³/kg</span></div></div>
+
+<div class="foot">単位迷宮 — Dimension Labyrinth ／ 効果測定用テスト</div>
+
+<div class="pb"></div>
+<h1 style="font-size:15pt">解答と解説（実施者用）</h1>
+<p style="font-size:9.5pt;color:#78716C">各1点、10点満点。部分点はつけません。</p>
+
+<table>
+  <tr><th class="n" style="width:12mm">問</th><th class="n" style="width:14mm">正解</th><th>考え方</th></tr>
+  <tr><td class="n">1</td><td class="n">イ</td><td>速さ＝距離÷時間。<span class="mono">m ÷ s = m/s</span></td></tr>
+  <tr><td class="n">2</td><td class="n">イ</td><td>加速度＝速さ÷時間。<span class="mono">(m/s) ÷ s = m/s²</span></td></tr>
+  <tr><td class="n">3</td><td class="n">イ</td><td><span class="mono">F = ma</span> より <span class="mono">kg × m/s² = kg·m/s²</span></td></tr>
+  <tr><td class="n">4</td><td class="n">イ</td><td>仕事＝力×距離。<span class="mono">kg·m/s² × m = kg·m²/s²</span></td></tr>
+  <tr><td class="n">5</td><td class="n">ア</td><td>圧力＝力÷面積。<span class="mono">kg·m/s² ÷ m² = kg/(m·s²)</span></td></tr>
+  <tr><td class="n">6</td><td class="n">ウ</td><td><span class="mono">a t² = m/s² × s² = m</span> で「距離」になり、速さ <span class="mono">m/s</span> と合わない。
+      ア・イ・エはいずれも両辺の単位が一致する</td></tr>
+  <tr><td class="n">7</td><td class="n">イ</td><td>摩擦係数＝摩擦力÷垂直抗力。力÷力なので単位が相殺して消える</td></tr>
+  <tr><td class="n">8</td><td class="n">イ</td><td>電気量＝電流×時間。<span class="mono">A × s = A·s</span></td></tr>
+  <tr><td class="n">9</td><td class="n">ア</td><td><span class="mono">k = F / x = (kg·m/s²) ÷ m = kg/s²</span>。
+      ゲームに登場しない量なので、公式の暗記では解けない</td></tr>
+  <tr><td class="n">10</td><td class="n">ウ</td><td><span class="mono">kg ÷ m³ = kg/m³</span>。これもゲームに登場しない量</td></tr>
+</table>
+
+<h3>採点のときに見ておくと良いこと</h3>
+<ul>
+  <li><b>問5・問9・問10</b>は「割り算で単位を作る」問題です。ここが伸びていれば、
+      次元を<b>組み立てる</b>力がついたと言えます。</li>
+  <li><b>問6</b>は式の妥当性を単位で判定する問題で、実際のテストで最も役に立つ技術です。</li>
+  <li><b>問7</b>（無次元量）は Level 1-1・2-3 に対応します。</li>
+</ul>
+
+<div class="pb"></div>
+<h1 style="font-size:15pt">記録シート</h1>
+<div class="name">
+  <span>実施日</span><span>対象（学年・人数）</span>
+</div>
+
+<table>
+  <tr>
+    <th class="n" style="width:10mm">No.</th>
+    <th style="width:26mm">氏名（イニシャル可）</th>
+    <th class="n" style="width:14mm">学年</th>
+    <th class="n" style="width:16mm">事前<br>／10</th>
+    <th class="n" style="width:16mm">事後<br>／10</th>
+    <th class="n" style="width:14mm">伸び</th>
+    <th class="n" style="width:22mm">問9・10<br>事前→事後</th>
+    <th>20分で到達したステージ・気づいたこと</th>
+  </tr>
+  <tr><td class="n">1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">4</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">7</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">10</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr style="background:#F5F5F4"><td class="n" colspan="3"><b>合計</b></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td></td></tr>
+  <tr style="background:#F5F5F4"><td class="n" colspan="3"><b>正答率（％）</b></td><td class="n"></td><td class="n"></td><td class="n"></td><td class="n"></td><td></td></tr>
+</table>
+
+<h3>作品概要に書くときの型</h3>
+<div class="box">
+  <span class="mono">
+  【効果測定】<br>
+  ◯年◯月、<b>◯◯（学年）◯名</b>に対し、単位に関する10問のテストを実施 →
+  本作を<b>20分</b>プレイ → 同じ10問を再度実施、という手順で前後比較を行った。<br>
+  ・全体の正答率　<b>◯◯% → ◯◯%</b>（＋◯◯ポイント）<br>
+  ・本作に登場しない量（ばね定数・密度）の次元を組み立てる2問　<b>◯◯% → ◯◯%</b><br>
+  同一問題を用いているため再テスト効果を分離できないが、
+  ゲーム中に一度も出てこない量についても正答率が上がったことは、
+  個別の答えの記憶ではなく<b>単位を組み立てる手続き</b>が身についたことを示唆する。
+  </span>
+</div>
+
+<div class="foot">単位迷宮 — Dimension Labyrinth ／ 第7回 学力向上アプリコンテスト 応募作品</div>
+
+</body>
+</html>

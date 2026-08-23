@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>単位迷宮 — 作品概要と動作方法</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: #1C1917; background: #fff;
+    font-family: "Yu Gothic UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+    font-size: 10pt; line-height: 1.85; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  h1 { font-size: 20pt; letter-spacing: .08em; margin: 0 0 2mm; font-weight: 700; }
+  .sub { font-size: 8.5pt; letter-spacing: .26em; color: #A8A29E; font-weight: 600; margin-bottom: 6mm; }
+  .lead { font-size: 11pt; font-weight: 700; line-height: 1.8; color: #1B7A67;
+          border-left: 3px solid #4FC0A8; padding: 3mm 0 3mm 5mm; margin: 0 0 6mm; }
+  h2 { font-size: 12pt; font-weight: 700; margin: 7mm 0 2.5mm; padding-bottom: 1.5mm;
+       border-bottom: 1px solid #E7E5E4; }
+  h3 { font-size: 10pt; font-weight: 700; margin: 4.5mm 0 1mm; color: #1C1917; }
+  p { margin: 0 0 2.5mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
+  li { margin-bottom: 1.2mm; }
+  b, strong { font-weight: 700; }
+  .em { color: #1B7A67; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 8.6pt; }
+  th, td { border: 1px solid #E7E5E4; padding: 1.4mm 2.4mm; text-align: left; vertical-align: top; }
+  th { background: #F5F5F4; font-weight: 700; }
+  td.n, th.n { text-align: center; white-space: nowrap; }
+  .meta { border: 1px solid #E7E5E4; border-radius: 3mm; padding: 4mm 5mm; background: #FAFAF9; margin-bottom: 6mm; font-size: 9pt; }
+  .meta div { display: flex; gap: 4mm; margin-bottom: 1.2mm; }
+  .meta div:last-child { margin-bottom: 0; }
+  .meta .k { width: 26mm; flex: none; color: #78716C; font-weight: 600; }
+  .meta .v { flex: 1; }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 9pt; }
+  .box { border: 1px solid #E7E5E4; border-radius: 2.5mm; padding: 3.5mm 4.5mm; background: #FAFAF9; margin: 2mm 0 3mm; }
+  .box.hi { background: #EFF9F6; border-color: #C6E2D1; }
+  .fill { background: #FFF9E8; border: 1px dashed #E5C97A; padding: 0 2mm; }
+  .steps { counter-reset: s; list-style: none; padding-left: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 8mm; margin-bottom: 2mm; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: .2mm;
+    width: 5.4mm; height: 5.4mm; border-radius: 50%; background: #1C1917; color: #fff;
+    font-size: 7.5pt; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .foot { margin-top: 8mm; padding-top: 3mm; border-top: 1px solid #E7E5E4; font-size: 8pt; color: #A8A29E; }
+  .pb { page-break-before: always; }
+  .nobreak { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<h1>単位迷宮</h1>
+<div class="sub">DIMENSION LABYRINTH</div>
+
+<div class="lead">
+  学習アプリの多くは「問題を出す → 答えさせる → 正誤を返す」という形をしています。<br>
+  本作は違います。物理の<b>単位そのものをプレイヤーの持ち物にして、操作の対象</b>にしました。<br>
+  問題を解かせるのではなく、<b>次元解析という行為そのものを、迷路のルールに翻訳</b>しています。
+</div>
+
+<div class="meta">
+  <div><span class="k">作品名</span><span class="v">単位迷宮（Dimension Labyrinth）</span></div>
+  <div><span class="k">応募者</span><span class="v"><span class="fill">［氏名・学校名・学年をご記入ください］</span></span></div>
+  <div><span class="k">部門</span><span class="v">一般部門</span></div>
+  <div><span class="k">対象</span><span class="v">中学生〜高校生（物理・理科）／小学校高学年でも「単位をそろえる」体験として遊べます</span></div>
+  <div><span class="k">遊べるURL</span><span class="v mono">https://ufclaude0i-star.github.io/tani-meikyu/</span></div>
+  <div><span class="k">ソースコード</span><span class="v mono">https://github.com/ufclaude0i-star/tani-meikyu</span></div>
+  <div><span class="k">動作環境</span><span class="v">PC（Windows / macOS / Linux）・タブレット・スマートフォンの各ブラウザ。<b>インストール・ネット接続 不要</b></span></div>
+</div>
+
+<h2>1. 目的 — なぜ「単位」なのか</h2>
+
+<p>
+物理が苦手な生徒の多くは、公式を<b>文字列として</b>暗記していて、必要な場面で取り出せません。
+一方で物理を使える人は、公式を忘れても
+「速さを出したいのだから <span class="mono">m/s</span>、つまり距離を時間で割ればいい」
+と、<b>単位から式の形を復元</b>します。
+</p>
+<p>
+これが<span class="em">次元解析</span>です。実際に強力な技術で、物理を専門にする人は日常的に使っています。
+にもかかわらず、学校ではほとんど訓練されません。公式は覚えさせられますが、
+「N は kg·m/s² だから、これを m² で割れば圧力 Pa になる」という<b>組み立ての練習</b>はまず行われない。
+ここが空白地帯です。
+</p>
+<p>
+本作の目的は、この次元解析の感覚を、説明ではなく<b>操作の反復</b>で身につけさせることです。
+そのために、次元解析の各要素をゲームのルールに一対一で対応させました。
+</p>
+
+<table class="nobreak">
+  <tr><th style="width:42%">次元解析でやっていること</th><th>ゲームのルール</th></tr>
+  <tr><td>単位を掛ける／割る</td><td>道に浮かぶ <span class="mono">×m</span> <span class="mono">÷s</span> の球を通る</td></tr>
+  <tr><td>同じ単位が約分されて消える</td><td><b>相殺</b>。球が縮み、金のリングと高音のアルペジオが鳴る</td></tr>
+  <tr><td>求めたい量の単位に一致させる</td><td>EXIT が要求する単位に<b>ぴったり一致</b>したときだけ扉が開く</td></tr>
+  <tr><td>ルート（変形の順序）を選ぶ</td><td><b>一度通った道は崩れて戻れない。</b>分かれ道の選択が、そのまま演算の選択になる</td></tr>
+  <tr><td>条件つきの式変形</td><td>関門🔒。「kg を持っている」「m を含まない」などを満たす手持ちでないと通れない</td></tr>
+  <tr><td>√をとる（全次数が偶数のときだけ可能）</td><td>√の橋。全指数が偶数のときだけ渡れる</td></tr>
+</table>
+
+<h2>2. 遊び方（ルールは4行）</h2>
+
+<ol class="steps">
+  <li>主人公は<b>物理の単位を1つだけ持った半透明の球</b>。持っている単位の量だけ球は大きくなります。</li>
+  <li>道に浮かぶ <span class="mono">×m</span> <span class="mono">÷s</span> の球を通ると、手持ちの単位がその演算を受けます。
+      同じ単位で割ると<b>相殺</b>して球が縮みます。</li>
+  <li><b>後戻りできません。</b>一度通ったマスは崩れて穴になり、二度と通れません。</li>
+  <li>EXIT が要求する単位に<b>ぴったり一致</b>したときだけ、扉が開きます。</li>
+</ol>
+
+<div class="box hi">
+  <b>この作品の設計上の核心は「後戻りできない」ことです。</b><br>
+  掛け算は順番を入れ替えても結果が同じなので、後戻りが自由だと「拾う順番」に意味がなくなり、
+  迷路である必然性が消えます。後戻りを禁じることで、分かれ道でどちらを選ぶかが
+  <b>取り返しのつかない「どの演算を使うか」の決定</b>になり、進む前に頭の中で単位を計算する必要が生まれます。
+  そのため迷路はわざと<b>ループを持つ形</b>（一本道ではない）に生成しています。一本道では経路が一意に決まり、
+  選択がゼロになってしまうからです。
+</div>
+
+<h2 class="pb">3. 動作方法</h2>
+
+<h3>起動のしかた（2通り。どちらでも同じものが動きます）</h3>
+<ol class="steps">
+  <li><b>ファイルから：</b>提出したソースコードの中の <code>index.html</code> を<b>ダブルクリック</b>してください。
+      それだけで起動します。インストール・ビルド・ネット接続はいずれも不要です。</li>
+  <li><b>ブラウザから：</b><span class="mono">https://ufclaude0i-star.github.io/tani-meikyu/</span> を開いてください。</li>
+</ol>
+
+<h3>操作</h3>
+<table class="nobreak">
+  <tr><th style="width:26%">環境</th><th>操作方法</th></tr>
+  <tr><td>PC</td><td>矢印キー または WASD ／ となりのマスをクリック ／ 画面下のスティックをドラッグ</td></tr>
+  <tr><td>スマホ・タブレット</td><td>画面下のスティック ／ となりのマスをタップ ／ スワイプ</td></tr>
+  <tr><td>キーボード</td><td><b>Z</b> もどす　<b>R</b> やり直し　<b>H</b> 段階ヒント　<b>T</b> ステージのヒント　<b>Esc</b> ステージ選択<br>
+      （クリア画面）<b>1〜4</b> クイズに解答　<b>Enter</b> つぎへ　<b>R</b> もう一度</td></tr>
+</table>
+
+<h3>画面の見かた</h3>
+<ul>
+  <li><b>上段の2枚のカード</b> … 左が「いま持っている単位」、右が「EXIT が要求する単位」。この2つを一致させるのが目標です。</li>
+  <li><b>中央の3D迷路</b> … 半透明の球が単位の球。🔒が関門。緑のマスが EXIT。通った跡は灰色の穴になります。</li>
+  <li><b>次元距離バー</b> … EXIT の単位と、いまの単位がどれだけズレているかを表します。減っていれば正しい方向です。</li>
+  <li><b>右上の「手数 / 最短」</b> … 最短手数はアプリが毎回その場で計算した実測値です（人が手で決めた数字ではありません）。</li>
+</ul>
+
+<h3>設定</h3>
+<ul>
+  <li><b>記憶モード</b> … 手持ちの単位表示をぼかします。頭の中だけで単位を追う練習になります。</li>
+  <li><b>効果音</b> … オン／オフを切り替えられます。</li>
+  <li><b>迷路の壁の色</b> … 6色から選べます（見やすさの個人差に対応するため）。</li>
+</ul>
+
+<h2>4. 機能と、そこに込めた学習設計</h2>
+
+<h3>3段階ヒント</h3>
+<p>
+① ゴールとの差分（何が足りず、何が多すぎるか）→ ② 残り最短手数 → ③ 次の一手、の順に開きます。
+いきなり答えを出すと学習が消えるため、必ず段階を踏ませます。
+</p>
+
+<h3>詰みの自動検出</h3>
+<p>
+1手ごとに「EXIT にまだ到達できるか」「残ったマスで必要な単位を作れるか」を判定し、
+不可能になった時点で知らせます。気づかないまま20手歩かせて時間を無駄にさせないためです。
+失敗を安くすることで、試行錯誤の回数そのものを増やしています。
+</p>
+
+<h3>クリア直後の4択クイズと、実際の公式の提示</h3>
+<p>
+クリアした瞬間に <span class="mono">F = ma → N = kg·m/s²</span> のように、
+いま自分が組み立てたものが<b>本物の物理法則だった</b>ことを提示します。
+続けて4択クイズを出し、解いた内容を言語化させます（生成効果）。
+</p>
+
+<h3>報酬の出しかたを2系統に分けている</h3>
+<p>
+相殺（＝単位が消える）だけを派手に演出すると、「とにかく単位を消せばよい」と誤って学習します。
+実際には kg → J のように<b>増やすのが正解</b>の場面もあります。そこで演出を明確に分けました。
+</p>
+<ul>
+  <li><b>相殺した</b> … 金のリング＋高音の上昇アルペジオ（快感を担当）</li>
+  <li><b>ゴールに近づいた</b> … 緑のリング（正しさを担当）</li>
+  <li><b>ゴールから遠ざかった</b> … 赤土のリング</li>
+</ul>
+<p>相殺と同時に近づいた場合は、低い「近づいた音」を重ねません。高音の快感を濁さないためです。</p>
+
+<h3>数値を入れていない理由</h3>
+<p>
+あえて数値を扱いません。数値を足すと計算ゲームになり、
+「<b>数字を無視してよい</b>」という次元解析最大の強みが薄れてしまうからです。
+本作で問われるのは最後まで単位だけです。
+</p>
+
+<h2>5. ステージ構成（全13ステージ）</h2>
+<p>
+力学 → 相殺と関門 → 電気・熱・累乗、の3章構成です。
+「最短手数」はすべて、後戻り禁止の条件下で自動探索した実測値です。
+</p>
+<table>
+  <tr><th class="n">章</th><th class="n">#</th><th>タイトル</th><th>出発 → 目標</th><th class="n">最短手</th><th>学ぶこと</th></tr>
+  <tr><td class="n" rowspan="4">1<br>力学</td><td class="n">1-1</td><td>よけいなものを捨てる</td><td class="mono">m → 1</td><td class="n">5</td><td>無次元・約分</td></tr>
+  <tr><td class="n">1-2</td><td>速さをつくる</td><td class="mono">m → m/s</td><td class="n">7</td><td>速さ＝距離÷時間</td></tr>
+  <tr><td class="n">1-3</td><td>力をつくる</td><td class="mono">kg → N</td><td class="n">11</td><td>F = ma</td></tr>
+  <tr><td class="n">1-4</td><td>関門をひらく</td><td class="mono">m/s → J</td><td class="n">9</td><td>仕事・エネルギー</td></tr>
+  <tr><td class="n" rowspan="4">2<br>相殺と関門</td><td class="n">2-1</td><td>相殺のコツ</td><td class="mono">J → W</td><td class="n">14</td><td>仕事率＝仕事÷時間</td></tr>
+  <tr><td class="n">2-2</td><td>圧力の迷宮</td><td class="mono">N → Pa</td><td class="n">15</td><td>圧力＝力÷面積</td></tr>
+  <tr><td class="n">2-3</td><td>無次元へ帰れ</td><td class="mono">N → 1</td><td class="n">13</td><td>無次元量の意味</td></tr>
+  <tr><td class="n">2-4</td><td>長い道のり</td><td class="mono">kg → J</td><td class="n">17</td><td>多段の組み立て</td></tr>
+  <tr><td class="n" rowspan="5">3<br>電気・熱<br>累乗</td><td class="n">3-1</td><td>電気量をためる</td><td class="mono">A → C</td><td class="n">17</td><td>電気量＝電流×時間</td></tr>
+  <tr><td class="n">3-2</td><td>電圧をつくる</td><td class="mono">J → V</td><td class="n">27</td><td>電圧＝エネルギー÷電気量</td></tr>
+  <tr><td class="n">3-3</td><td>比熱の谷</td><td class="mono">J → m²/(s²·K)</td><td class="n">17</td><td>比熱の次元</td></tr>
+  <tr><td class="n">3-4</td><td>√の橋</td><td class="mono">m/s² → m/s</td><td class="n">15</td><td>平方根がとれる条件</td></tr>
+  <tr><td class="n">3-5</td><td>万有引力定数</td><td class="mono">N → m³/(kg·s²)</td><td class="n">25</td><td>定数の次元を逆算する</td></tr>
+</table>
+
+<h2 class="pb">6. 技術的な特徴</h2>
+
+<h3>外部ファイル・外部通信がゼロ</h3>
+<p>
+画像・音声ファイル・外部ライブラリを<b>一切使っていません</b>。
+3D表示は Three.js などを使わず、<b>Canvas 2D に自前で透視投影を実装</b>しました。
+効果音は音声ファイルではなく WebAudio による合成です。
+結果として作品全体が <b>HTML 1ファイル（約107KB）</b>に収まっており、
+ダブルクリックするだけで、オフラインでも、どの端末でも同じように動きます。
+</p>
+
+<h3>単位を「5次元の指数ベクトル」として扱う</h3>
+<p>
+すべての単位を、5つの基本次元（kg, m, s, A, K）の指数ベクトルとして表現しています。
+これにより、掛け算・割り算は<b>ベクトルの加算・減算</b>に、
+「EXIT の単位と一致するか」の判定は<b>ベクトルの一致判定</b>に帰着します。
+曖昧さがゼロなので、採点が完全に自動化でき、ゲームとして破綻しません。
+次元距離バーも、このベクトル間の距離をそのまま表示しています。
+</p>
+
+<h3>迷路は自動生成し、解けることを検証してから出荷している</h3>
+<p>
+ループを持つ迷路を生成し、正解ルート上に必要な演算と関門を配置したうえで、
+<b>「後戻り禁止」＝自己非交差経路の探索器</b>で本当に解けることを確認してから固定データとして書き出しています。
+行き止まりには単位の球を置きません（後戻りできない以上、袋小路の球は原理的に使えないため、
+生成時に候補から除外し、書き出し前にも再検査しています）。
+乱数のシードは固定してあるので、誰がビルドしても同じ迷路になります。
+</p>
+
+<h3>同じ探索器をアプリ内にも積んでいる</h3>
+<p>
+最短手数の表示、段階ヒントの「次の一手」、詰みの自動検出は、
+すべてこの探索器をアプリ内で走らせて得ています。
+ステージを修正しても評価がズレることがありません。
+</p>
+
+<h3>品質確認</h3>
+<p>作品の状態は、その場で再実行できる検証スクリプトで担保しています。</p>
+<table class="nobreak">
+  <tr><th style="width:34%">検証</th><th>内容</th></tr>
+  <tr><td class="mono">verify.js</td><td>全13ステージが後戻り禁止の条件で解けること、最短手数</td></tr>
+  <tr><td class="mono">e2e.js</td><td>実ブラウザで13ステージすべてを自動クリア</td></tr>
+  <tr><td class="mono">debug-play.js</td><td>人の操作を再現する26項目の回帰テスト（タップ・スワイプ・キー・詰み検出・セーブなど）</td></tr>
+  <tr><td class="mono">features-test.js</td><td>後戻り禁止・球の大きさ・相殺・詰み検出の動作確認</td></tr>
+</table>
+<p>提出時点で、上記すべてが問題なく通過しています。</p>
+
+<h2>7. オリジナリティについて</h2>
+<ul>
+  <li>企画・設計・実装・デザイン・効果音まで、すべて応募者本人による<b>オリジナル作品</b>です。</li>
+  <li>画像・音声・フォント・ライブラリを含め、<b>第三者の素材を一切使用していません</b>
+      （前述のとおり、外部ファイルを1つも読み込まない構成です）。</li>
+  <li>他のコンテストに応募した作品ではありません。</li>
+</ul>
+
+<div class="foot">
+  単位迷宮 — Dimension Labyrinth ／ 第7回 学力向上アプリコンテスト 応募作品<br>
+  遊べるURL: https://ufclaude0i-star.github.io/tani-meikyu/ ／
+  ソースコード: https://github.com/ufclaude0i-star/tani-meikyu
+</div>
+
+</body>
+</html>

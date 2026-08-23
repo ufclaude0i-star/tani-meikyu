@@ -2,3 +2,5 @@ node_modules/
 shots/
 dist/
 shot-*.png
+demo/
+docs/*.pdf
