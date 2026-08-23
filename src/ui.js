@@ -197,7 +197,6 @@
     $('dist-fill').style.width = Math.max(0, Math.min(100, Math.round((1 - d / d0) * 100))) + '%';
     $('dist-num').textContent = d === 0 ? 'ぴったり！' : 'あと ' + d;
     $('steps').textContent = G.steps;
-    $('par').textContent = st.par;
     $('btn-undo').disabled = G.history.length === 0;
     if (msg) toast(msg, kind);
   }

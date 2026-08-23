@@ -292,7 +292,7 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
     <div class="stage3d" id="stage3d">
       <canvas id="cv"></canvas>
       <div class="overlay">
-        <div class="hud-steps">手数 <span id="steps">0</span> / 最短 <span id="par">-</span></div>
+        <div class="hud-steps">手数 <span id="steps">0</span></div>
         <div class="toast" id="msg"></div>
       </div>
     </div>
@@ -2027,7 +2027,6 @@ var R3 = (function () {
     $('dist-fill').style.width = Math.max(0, Math.min(100, Math.round((1 - d / d0) * 100))) + '%';
     $('dist-num').textContent = d === 0 ? 'ぴったり！' : 'あと ' + d;
     $('steps').textContent = G.steps;
-    $('par').textContent = st.par;
     $('btn-undo').disabled = G.history.length === 0;
     if (msg) toast(msg, kind);
   }
