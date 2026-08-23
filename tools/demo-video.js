@@ -32,6 +32,8 @@ const CSS = `
 #__end .url{font:600 17px ui-monospace,Consolas,monospace;color:#1C1917;margin-top:18px;
   border:1px solid #E7E5E4;background:#fff;border-radius:10px;padding:10px 20px}
 #__end .c2{font:500 12.5px system-ui,"Yu Gothic UI",sans-serif;color:#A8A29E}
+#__end .credit{position:fixed;bottom:18px;left:0;right:0;text-align:center;
+  font:500 12px system-ui,"Yu Gothic UI",sans-serif;color:#C0BBB4;letter-spacing:.04em}
 `;
 
 const INIT = () => {
@@ -44,7 +46,8 @@ const INIT = () => {
     '<div class="u">公式を覚えるのではなく、単位から組み立てる。</div>' +
     '<div class="c">第7回 学力向上アプリコンテスト 応募作品</div>' +
     '<div class="url">https://ufclaude0i-star.github.io/tani-meikyu/</div>' +
-    '<div class="c2">index.html をダブルクリックするだけでも動きます（インストール・通信 不要／音が出ます）</div>';
+    '<div class="c2">index.html をダブルクリックするだけでも動きます（インストール・通信 不要）</div>' +
+    '<div class="credit">ナレーション音声 VOICEVOX：ずんだもん</div>';
   d.body.appendChild(end);
   window.__cap = t => { const e = d.getElementById('__cap'); if (t) { e.innerHTML = t; e.classList.add('on'); } else e.classList.remove('on'); };
   window.__badge = on => d.getElementById('__badge').classList.toggle('on', !!on);
@@ -71,6 +74,9 @@ const INIT = () => {
   const cap = (t) => p.evaluate(t => window.__cap(t), t);
   const t0 = Date.now();
   const mark = s => console.log(`  ${((Date.now() - t0) / 1000).toFixed(1)}s  ${s}`);
+  const timeline = {};
+  // ナレーションの読み始め位置。動画を撮り直しても原稿の位置がズレないようにする
+  const cue = k => { timeline[k] = Date.now() - t0; };
 
   // 盤面までを1画面に収める（下のルール欄は動画では読めないので映さない）
   await p.goto(F);
@@ -100,6 +106,7 @@ const INIT = () => {
 
   /* ============ 1. 単位を持ち歩く（0:00–0:11） ============ */
   mark('scene1 単位を持ち歩く');
+  cue('n1');
   await openStage('1-3');                       // kg → N
   await cap('主人公の球が持っているのは、物理の<em>単位</em>');
   await wait(3200);
@@ -111,25 +118,28 @@ const INIT = () => {
 
   /* ============ 2. 道が崩れる（0:11–0:21） ============ */
   mark('scene2 道が崩れる');
+  cue('n2');
   await cap('一度通った道は<em>崩れて、二度と通れない</em>');
   for (const n of pathA.slice(4, 7)) await step(n, 560);
   await wait(2100);
   await cap('だから分かれ道の選択が、そのまま「どの演算を使うか」の決定になる');
   for (const n of pathA.slice(7, 10)) await step(n, 560);
-  await wait(1900);
+  await wait(2500);
 
   /* ============ 3. EXITに単位を合わせる（0:21–0:34） ============ */
   mark('scene3 EXIT');
+  cue('n3');
   await cap('EXIT が要求する単位に、<em>ぴったり</em>合わせたときだけ扉が開く');
   for (const n of pathA.slice(10)) await step(n, 560);
   await p.waitForSelector('#modal-clear:not(.hidden)');
   await wait(700);
   mark('  クリア画面');
   await cap('遊び終わってから、それが<em>本物の公式</em>だったと分かる');
-  await wait(4600);
+  await wait(5400);
 
   /* ============ 4. 相殺（0:34–0:46） ============ */
   mark('scene4 相殺');
+  cue('n4');
   await p.evaluate(() => document.getElementById('c-select').click());
   await wait(400);
   await cap('');
@@ -148,11 +158,13 @@ const INIT = () => {
     }
   }
   await wait(1500);
+  cue('n5');
   await cap('この「割って消す」感覚が、次元解析そのもの');
-  await wait(3200);
+  await wait(4700);
 
   /* ============ 5. 関門（0:46–0:53） ============ */
   mark('scene5 関門');
+  cue('n6');
   await cap('');
   await openStage('2-2');                       // 圧力の迷宮（関門つき）
   await cap('関門は<em>条件を満たす単位のとき</em>しか通れない。拾う順番が問われる');
@@ -162,6 +174,7 @@ const INIT = () => {
 
   /* ============ 6. 全13ステージ（0:53–0:58） ============ */
   mark('scene6 ステージ一覧');
+  cue('n7');
   await cap('');
   await p.click('#btn-tomenu'); await wait(500);
   await cap('力学・電気・熱をあつかう全13ステージ');
@@ -170,18 +183,23 @@ const INIT = () => {
     let y = 0;
     (function tick() { y += 7; scrollTo(0, Math.min(y, top)); y < top ? requestAnimationFrame(tick) : res(); })();
   }));
-  await wait(1400);
+  await wait(2600);
 
   /* ============ 7. タイトル（0:58–1:04） ============ */
   mark('scene7 タイトル');
+  cue('n8');
   await p.evaluate(() => scrollTo(0, 0));
   await cap('');
   await p.evaluate(() => { window.__badge(false); window.__end(true); });
-  await wait(5200);
+  await wait(6800);
 
   mark('撮影終了');
   await ctx.close();          // ここで動画が書き出される
   await browser.close();
+
+  timeline.__end = Date.now() - t0;
+  fs.writeFileSync(path.join(OUT, 'timeline.json'), JSON.stringify(timeline, null, 2), 'utf8');
+  console.log('ナレーションの位置: ' + Object.keys(timeline).map(k => k + '=' + (timeline[k]/1000).toFixed(1) + 's').join('  '));
 
   const file = fs.readdirSync(OUT).find(f => f.endsWith('.webm'));
   const dst = path.join(OUT, 'tani-meikyu-demo.webm');
