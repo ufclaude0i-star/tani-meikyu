@@ -112,7 +112,11 @@
   迷路である必然性が消えます。後戻りを禁じることで、分かれ道でどちらを選ぶかが
   <b>取り返しのつかない「どの演算を使うか」の決定</b>になり、進む前に頭の中で単位を計算する必要が生まれます。
   そのため迷路はわざと<b>ループを持つ形</b>（一本道ではない）に生成しています。一本道では経路が一意に決まり、
-  選択がゼロになってしまうからです。
+  選択がゼロになってしまうからです。<br><br>
+  <b>同じ理由で、袋小路（行き止まり）を1つも作っていません。</b>戻れない以上、何も置かれていない袋小路は
+  「入ったら やり直すしかない」純粋な罰で、プレイヤーが得るものがありません。迷路を生成したあと、
+  行き止まりのマスをすべて隣とつないで消しています。全13ステージで袋小路が0個であることは、
+  検証スクリプトが毎回確かめます。
 </div>
 
 <h2 class="pb">3. 動作方法</h2>
@@ -198,17 +202,17 @@
   <tr><th class="n">章</th><th class="n">#</th><th>タイトル</th><th>出発 → 目標</th><th class="n">最短手</th><th>学ぶこと</th></tr>
   <tr><td class="n" rowspan="4">1<br>力学</td><td class="n">1-1</td><td>よけいなものを捨てる</td><td class="mono">m → 1</td><td class="n">5</td><td>無次元・約分</td></tr>
   <tr><td class="n">1-2</td><td>速さをつくる</td><td class="mono">m → m/s</td><td class="n">7</td><td>速さ＝距離÷時間</td></tr>
-  <tr><td class="n">1-3</td><td>力をつくる</td><td class="mono">kg → N</td><td class="n">11</td><td>F = ma</td></tr>
-  <tr><td class="n">1-4</td><td>関門をひらく</td><td class="mono">m/s → J</td><td class="n">9</td><td>仕事・エネルギー</td></tr>
-  <tr><td class="n" rowspan="4">2<br>相殺と関門</td><td class="n">2-1</td><td>相殺のコツ</td><td class="mono">J → W</td><td class="n">14</td><td>仕事率＝仕事÷時間</td></tr>
-  <tr><td class="n">2-2</td><td>圧力の迷宮</td><td class="mono">N → Pa</td><td class="n">15</td><td>圧力＝力÷面積</td></tr>
-  <tr><td class="n">2-3</td><td>無次元へ帰れ</td><td class="mono">N → 1</td><td class="n">13</td><td>無次元量の意味</td></tr>
-  <tr><td class="n">2-4</td><td>長い道のり</td><td class="mono">kg → J</td><td class="n">17</td><td>多段の組み立て</td></tr>
-  <tr><td class="n" rowspan="5">3<br>電気・熱<br>累乗</td><td class="n">3-1</td><td>電気量をためる</td><td class="mono">A → C</td><td class="n">17</td><td>電気量＝電流×時間</td></tr>
-  <tr><td class="n">3-2</td><td>電圧をつくる</td><td class="mono">J → V</td><td class="n">27</td><td>電圧＝エネルギー÷電気量</td></tr>
-  <tr><td class="n">3-3</td><td>比熱の谷</td><td class="mono">J → m²/(s²·K)</td><td class="n">17</td><td>比熱の次元</td></tr>
-  <tr><td class="n">3-4</td><td>√の橋</td><td class="mono">m/s² → m/s</td><td class="n">15</td><td>平方根がとれる条件</td></tr>
-  <tr><td class="n">3-5</td><td>万有引力定数</td><td class="mono">N → m³/(kg·s²)</td><td class="n">25</td><td>定数の次元を逆算する</td></tr>
+  <tr><td class="n">1-3</td><td>力をつくる</td><td class="mono">kg → N</td><td class="n">9</td><td>F = ma</td></tr>
+  <tr><td class="n">1-4</td><td>関門をひらく</td><td class="mono">m/s → J</td><td class="n">15</td><td>仕事・エネルギー</td></tr>
+  <tr><td class="n" rowspan="4">2<br>相殺と関門</td><td class="n">2-1</td><td>相殺のコツ</td><td class="mono">J → W</td><td class="n">10</td><td>仕事率＝仕事÷時間</td></tr>
+  <tr><td class="n">2-2</td><td>圧力の迷宮</td><td class="mono">N → Pa</td><td class="n">19</td><td>圧力＝力÷面積</td></tr>
+  <tr><td class="n">2-3</td><td>無次元へ帰れ</td><td class="mono">N → 1</td><td class="n">15</td><td>無次元量の意味</td></tr>
+  <tr><td class="n">2-4</td><td>長い道のり</td><td class="mono">kg → J</td><td class="n">19</td><td>多段の組み立て</td></tr>
+  <tr><td class="n" rowspan="5">3<br>電気・熱<br>累乗</td><td class="n">3-1</td><td>電気量をためる</td><td class="mono">A → C</td><td class="n">15</td><td>電気量＝電流×時間</td></tr>
+  <tr><td class="n">3-2</td><td>電圧をつくる</td><td class="mono">J → V</td><td class="n">21</td><td>電圧＝エネルギー÷電気量</td></tr>
+  <tr><td class="n">3-3</td><td>比熱の谷</td><td class="mono">J → m²/(s²·K)</td><td class="n">21</td><td>比熱の次元</td></tr>
+  <tr><td class="n">3-4</td><td>√の橋</td><td class="mono">m/s² → m/s</td><td class="n">17</td><td>平方根がとれる条件</td></tr>
+  <tr><td class="n">3-5</td><td>万有引力定数</td><td class="mono">N → m³/(kg·s²)</td><td class="n">31</td><td>定数の次元を逆算する</td></tr>
 </table>
 
 <h2 class="pb">6. 技術的な特徴</h2>

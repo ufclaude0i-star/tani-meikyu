@@ -128,6 +128,31 @@ function degreeOf(g, C, R_, x, y) {
   return d;
 }
 
+
+/* ---- 行き止まりを潰す ----
+   後戻り禁止のゲームでは、何も置かれていない袋小路は「入ったら もどす しかない」
+   純粋な罰で、プレイヤーが得るものが何もない。球も関門も置けない（使えないので）ため、
+   ただの無駄なマスになる。生成後に、次数1のセルを隣とつないで消す。
+   結果としてループが増えるので、「分かれ道が多い迷路」という設計方針にも合う。 */
+function removeDeadEnds(g, C, R_, R) {
+  for (let pass = 0; pass < 8; pass++) {
+    let changed = 0;
+    for (let y = 0; y < R_; y++) for (let x = 0; x < C; x++) {
+      if (degreeOf(g, C, R_, x, y) > 1) continue;
+      const cands = shuffle(R, NB.slice()).filter(([dx, dy]) => {
+        const nx = x + dx, ny = y + dy;
+        return nx >= 0 && ny >= 0 && nx < C && ny < R_ && !open_(g, x, y, dx, dy);
+      });
+      if (!cands.length) continue;
+      // 次数の大きい相手を優先してつなぐ。袋小路どうしをつなぐと別の袋小路が残るため
+      cands.sort((a, b) => degreeOf(g, C, R_, x + b[0], y + b[1]) - degreeOf(g, C, R_, x + a[0], y + a[1]));
+      const [dx, dy] = cands[0];
+      g[2 * y + 1 + dy][2 * x + 1 + dx] = '.';
+      changed++;
+    }
+    if (!changed) break;
+  }
+}
 /* ---- 単位の演算を1つ適用 ---- */
 function applyOp(hand, op) {
   if (op === '^0.5') return vpow(hand, 0.5);
@@ -165,6 +190,7 @@ function build(spec, seed) {
   const R = rng(seed);
   const g = makeMaze(spec.C, spec.R, R, spec.braid).map(r => r.split ? r.split('') : r.slice());
   const C = spec.C, R_ = spec.R;
+  if (spec.keepDeadEnds !== true) removeDeadEnds(g, C, R_, R);
   const s = [0, 0], t = [C - 1, R_ - 1];
   const p = spec.short ? shortPath(g, C, R_, s, t)
                        : longPath(g, C, R_, s, t, R, 60, spec.minLen || Math.floor((C + R_) * 1.3));
@@ -267,7 +293,9 @@ function mazeScore(def) {
     if (deg >= 3) junction++;
     if (deg === 1) dead++;
   }
-  return { junction, dead, score: junction * 3 + dead };
+  // 袋小路は罰でしかないので減点する。以前は加点していて、袋小路の多いシードを
+  // わざわざ選んでしまっていた（友人のプレイで「無駄な枠がある」と指摘された原因）
+  return { junction, dead, score: junction * 3 - dead * 6 };
 }
 
 /** 解けるシードを何通りも試し、いちばん迷路らしいものを採用する */

@@ -18,5 +18,20 @@ for (const def of defs) {
     ' ' + core.unitText(st.startV).padEnd(10) + ' → ' + core.unitText(st.goalV).padEnd(14) +
     ' 最短 ' + String(path.length).padStart(3) + ' 手  (' + ms + 'ms)');
   def.__par = path.length;
+
+  /* 袋小路（次数1のセル）が残っていないか。
+     後戻り禁止のゲームでは、何も置かれていない袋小路は「入ったら もどす しかない」
+     純粋な罰で、プレイヤーが得るものが何もない。生成器が潰しているはずなので、
+     ここで見つかったら生成器の退行を疑うこと。 */
+  var dead = [], junction = 0;
+  for (var yy = 0; yy < st.h; yy++) for (var xx = 0; xx < st.w; xx++) {
+    var deg = 0;
+    for (var di = 0; di < 4; di++) if (core.canGo(st, xx, yy, di)) deg++;
+    if (deg >= 3) junction++;
+    if (deg <= 1) dead.push(xx + ',' + yy);
+  }
+  if (dead.length) { console.log('   ⚠ ' + def.id + ' に袋小路が ' + dead.length + ' 個ある: ' + dead.join(' ')); bad++; }
+  var cells = st.w * st.h;
+  if (junction < cells * 0.28) { console.log('   ⚠ ' + def.id + ' は分岐点が少なく単調（' + junction + '/' + cells + '）'); bad++; }
 }
 console.log(bad === 0 ? '\n全ステージ OK' : '\n問題あり: ' + bad + ' 件');
