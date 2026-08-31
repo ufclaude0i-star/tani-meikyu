@@ -197,11 +197,34 @@
     $('dist-fill').style.width = Math.max(0, Math.min(100, Math.round((1 - d / d0) * 100))) + '%';
     $('dist-num').textContent = d === 0 ? 'ぴったり！' : 'あと ' + d;
     $('steps').textContent = G.steps;
+    renderStars();
     $('btn-undo').disabled = G.history.length === 0 || G.undoLeft <= 0;
     $('undo-left').textContent = G.undoLeft === Infinity ? '' : G.undoLeft;
     $('undo-left').className = G.undoLeft === Infinity ? 'hidden'
       : (G.undoLeft === 0 ? 'ucount out' : 'ucount');
     if (msg) toast(msg, kind);
+  }
+
+  /* ---------- 星の判定 ----------
+     クリア画面とプレイ中の表示で条件がズレると嘘をつくことになるので、
+     判定はこの関数だけに置き、両方から呼ぶ。 */
+  var STAR3 = { hints: 0, undos: 2 };   // ★3の条件。表示にもこの値を使う
+  /** 星の表示を描き直す。
+      ★ G.hints / G.undos を変える処理は、必ずこの関数を呼ぶこと。
+      呼び忘れると「プレイ中は★3と出ているのにクリアしたら★1」という
+      嘘の表示になる（実際に hint() で起きた）。 */
+  function renderStars() {
+    if (!G) return;
+    var s3 = starsFor(G.hints, G.undos);
+    $('star-mark').innerHTML = starsHTML(s3);
+    $('star-cond').textContent = 'ヒント ' + G.hints + '/' + STAR3.hints +
+      '　もどす ' + G.undos + '/' + STAR3.undos;
+    $('hud-star').className = 'hud-star' + (s3 === 3 ? '' : ' lost');
+  }
+  function starsFor(hints, undos) {
+    if (hints <= STAR3.hints && undos <= STAR3.undos) return 3;
+    if (hints <= 1 && undos <= 10) return 2;
+    return 1;
   }
 
   /* ---------- もどす回数 ----------
@@ -320,6 +343,7 @@
   /* ---------- ヒント ---------- */
   function hint() {
     G.hints++;
+    renderStars();   // ここを忘れると★表示が実際の判定とズレる
     var st = G.stage;
     if (G.hints === 1) {
       var need = [], extra = [];
@@ -344,9 +368,7 @@
     G.done = true;
     SE.clear();
     var st = G.stage;
-    var stars = 1;
-    if (G.hints === 0 && G.undos <= 2) stars = 3;
-    else if (G.hints <= 1 && G.undos <= 10) stars = 2;
+    var stars = starsFor(G.hints, G.undos);
     var prev = save.clear[st.id];
     if (!prev || prev.stars < stars) save.clear[st.id] = { stars: stars, steps: G.steps, masked: G.masked };
     else if (G.masked) save.clear[st.id].masked = true;
@@ -358,6 +380,10 @@
     $('clear-body').innerHTML =
       '<h3>CLEAR！　' + st.title + '</h3>' +
       '<div class="stars-big">' + starsHTML(stars) + '</div>' +
+      '<div class="star-rule' + (stars === 3 ? ' got' : '') + '">' +
+      (stars === 3 ? '★★★ 達成　ヒント0回・もどす' + G.undos + '回'
+                   : '★★★ の条件は「ヒント0回・もどす' + STAR3.undos + '回まで」' +
+                     '（今回はヒント' + G.hints + '回・もどす' + G.undos + '回）') + '</div>' +
       '<div style="text-align:center;color:var(--dim);font-size:13px;font-weight:700">' +
       G.steps + ' 手（最短 ' + st.par + ' 手）／相殺 ' + G.cancels + ' 回' +
       (G.undos ? '／もどす ' + G.undos + ' 回' : '') + (G.hints ? '／ヒント ' + G.hints + ' 回' : '') +

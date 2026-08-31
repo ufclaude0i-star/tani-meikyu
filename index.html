@@ -138,6 +138,14 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .hud-steps{position:absolute;top:10px;right:12px;background:rgba(255,255,255,.92);
   border:1px solid var(--line);border-radius:99px;
   padding:5px 12px;font-size:12px;font-weight:600;color:var(--txt)}
+/* ★の状態。盤面に重ねるとスタート地点の球（必ず左上）と重なるので、盤面の外に置く */
+.hud-star{display:flex;align-items:center;gap:8px;margin-bottom:9px;
+  padding-bottom:8px;border-bottom:1px solid var(--line)}
+.hud-star .marks{font-size:13px;letter-spacing:2px;color:var(--star);flex:none}
+.hud-star .marks .off{color:#E7E5E4}
+.hud-star .cond{font-size:11px;font-weight:600;color:var(--dim)}
+.hud-star.lost .cond{color:var(--clay)}
+
 .toast{position:absolute;left:50%;transform:translateX(-50%);top:52px;max-width:86%;
   background:rgba(23,23,23,.92);color:#fff;font-size:13px;font-weight:500;padding:9px 15px;
   border-radius:var(--r-sm);opacity:0;transition:opacity .2s;text-align:center;line-height:1.6}
@@ -191,6 +199,10 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
 .modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;
   max-width:540px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.16)}
 .modal h3{margin:0 0 10px;font-size:19px;font-weight:700;color:var(--txt)}
+.star-rule{text-align:center;font-size:11.5px;font-weight:600;color:var(--dim);
+  background:var(--sunken);border:1px solid var(--line);border-radius:99px;
+  padding:4px 12px;margin:0 auto 10px;display:table}
+.star-rule.got{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
 .modal .stars-big{font-size:26px;color:var(--star);letter-spacing:8px;text-align:center;margin:12px 0 10px}
 .modal .stars-big .off{color:#E7E5E4}
 .formula{background:var(--sunken);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;
@@ -306,6 +318,10 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
     </div>
 
     <div class="distbar">
+      <div class="hud-star" id="hud-star">
+        <span class="marks" id="star-mark"></span>
+        <span class="cond" id="star-cond"></span>
+      </div>
       <div class="track"><div class="fill" id="dist-fill" style="width:0%"></div></div>
       <div class="cap"><span>EXIT の単位との「次元距離」</span><span id="dist-num"></span></div>
     </div>
@@ -327,6 +343,7 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
       <b>後戻りできない。</b> 通った道は崩れて穴になる。手持ちが増えると球が大きくなり、
       同じ単位で割ると<b>相殺</b>して小さくなる。
       <b>「もどす」は回数制限つき</b>（ボタンの数字が残り回数）。使い切っても「やり直し」は何度でもできる。<br>
+      <b>★★★の条件</b>　ヒントを1度も使わず、もどすが2回まで。次元距離バーの上に今の状態が出る。<br>
       <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD<br>
       <b>キーボード</b>　<kbd>Z</kbd>もどす　<kbd>R</kbd>やり直し　<kbd>H</kbd>段階ヒント　<kbd>T</kbd>ステージのヒント　<kbd>Esc</kbd>ステージ選択
     </div>
@@ -347,7 +364,9 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
     <p><b>「もどす」には回数制限があります。</b>第1章は5回、第2章は3回、第3章は2回です（ボタンの数字が残り回数）。無制限だと「適当に進んで違ったら戻す」で解けてしまい、進む前に考える意味がなくなるためです。<b>使い切っても「やり直し」は何度でもできる</b>ので、詰まることはありません。設定で制限を外すこともできます。</p>
     <h4>4. 関門</h4>
     <p><span class="chip gate">🔒</span> は、書かれた条件（例：<b>kg</b>＝kgを持っている、<b>¬m</b>＝mを含まない、<b>1</b>＝無次元）を満たす手持ちでないと通れません。「どの順番で拾うか」が問われます。</p>
-    <h4>5. 次元距離バー</h4>
+    <h4>5. ★★★ の条件</h4>
+    <p><b>ヒントを1度も使わず、「もどす」が2回まで</b>なら★3です。次元距離バーの上に、いまの★と使った回数が出ています。3回以上もどすと★2、ヒントを2回以上使うと★1になります。<b>「進む前に考える」ほど星が増える</b>という関係にしてあります。</p>
+    <h4>6. 次元距離バー</h4>
     <p>EXIT の単位と、いまの単位が<b>どれだけズレているか</b>を表します。減る方向に進んでいれば正しい方向です。</p>
     <h4>なぜ単位で遊ぶのか</h4>
     <p>物理では、式を忘れても<b>単位を組み立てれば答えの形が分かる</b>ことがあります（次元解析）。「速さを出したいなら m/s だから、距離を時間で割ればいい」——この感覚が身につくと、公式の丸暗記から抜け出せます。</p>
@@ -2040,11 +2059,34 @@ var R3 = (function () {
     $('dist-fill').style.width = Math.max(0, Math.min(100, Math.round((1 - d / d0) * 100))) + '%';
     $('dist-num').textContent = d === 0 ? 'ぴったり！' : 'あと ' + d;
     $('steps').textContent = G.steps;
+    renderStars();
     $('btn-undo').disabled = G.history.length === 0 || G.undoLeft <= 0;
     $('undo-left').textContent = G.undoLeft === Infinity ? '' : G.undoLeft;
     $('undo-left').className = G.undoLeft === Infinity ? 'hidden'
       : (G.undoLeft === 0 ? 'ucount out' : 'ucount');
     if (msg) toast(msg, kind);
+  }
+
+  /* ---------- 星の判定 ----------
+     クリア画面とプレイ中の表示で条件がズレると嘘をつくことになるので、
+     判定はこの関数だけに置き、両方から呼ぶ。 */
+  var STAR3 = { hints: 0, undos: 2 };   // ★3の条件。表示にもこの値を使う
+  /** 星の表示を描き直す。
+      ★ G.hints / G.undos を変える処理は、必ずこの関数を呼ぶこと。
+      呼び忘れると「プレイ中は★3と出ているのにクリアしたら★1」という
+      嘘の表示になる（実際に hint() で起きた）。 */
+  function renderStars() {
+    if (!G) return;
+    var s3 = starsFor(G.hints, G.undos);
+    $('star-mark').innerHTML = starsHTML(s3);
+    $('star-cond').textContent = 'ヒント ' + G.hints + '/' + STAR3.hints +
+      '　もどす ' + G.undos + '/' + STAR3.undos;
+    $('hud-star').className = 'hud-star' + (s3 === 3 ? '' : ' lost');
+  }
+  function starsFor(hints, undos) {
+    if (hints <= STAR3.hints && undos <= STAR3.undos) return 3;
+    if (hints <= 1 && undos <= 10) return 2;
+    return 1;
   }
 
   /* ---------- もどす回数 ----------
@@ -2163,6 +2205,7 @@ var R3 = (function () {
   /* ---------- ヒント ---------- */
   function hint() {
     G.hints++;
+    renderStars();   // ここを忘れると★表示が実際の判定とズレる
     var st = G.stage;
     if (G.hints === 1) {
       var need = [], extra = [];
@@ -2187,9 +2230,7 @@ var R3 = (function () {
     G.done = true;
     SE.clear();
     var st = G.stage;
-    var stars = 1;
-    if (G.hints === 0 && G.undos <= 2) stars = 3;
-    else if (G.hints <= 1 && G.undos <= 10) stars = 2;
+    var stars = starsFor(G.hints, G.undos);
     var prev = save.clear[st.id];
     if (!prev || prev.stars < stars) save.clear[st.id] = { stars: stars, steps: G.steps, masked: G.masked };
     else if (G.masked) save.clear[st.id].masked = true;
@@ -2201,6 +2242,10 @@ var R3 = (function () {
     $('clear-body').innerHTML =
       '<h3>CLEAR！　' + st.title + '</h3>' +
       '<div class="stars-big">' + starsHTML(stars) + '</div>' +
+      '<div class="star-rule' + (stars === 3 ? ' got' : '') + '">' +
+      (stars === 3 ? '★★★ 達成　ヒント0回・もどす' + G.undos + '回'
+                   : '★★★ の条件は「ヒント0回・もどす' + STAR3.undos + '回まで」' +
+                     '（今回はヒント' + G.hints + '回・もどす' + G.undos + '回）') + '</div>' +
       '<div style="text-align:center;color:var(--dim);font-size:13px;font-weight:700">' +
       G.steps + ' 手（最短 ' + st.par + ' 手）／相殺 ' + G.cancels + ' 回' +
       (G.undos ? '／もどす ' + G.undos + ' 回' : '') + (G.hints ? '／ヒント ' + G.hints + ' 回' : '') +
