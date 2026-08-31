@@ -165,6 +165,12 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 /* 狭い画面では縦積み、余裕があれば横一列（縦積みのままだとPCで1つ600px超に伸びて間延びする） */
 @media (min-width:560px){ .controls{grid-template-columns:1fr 1fr 1fr} }
 .controls .btn{padding:10px 8px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px}
+/* もどすの残り回数 */
+.ucount{display:inline-block;min-width:1.5em;padding:1px 6px;border-radius:99px;
+  background:var(--blue-bg);border:1px solid var(--blue-line);color:var(--blue-d);
+  font-size:11px;font-weight:700;line-height:1.5}
+.ucount.out{background:var(--clay-bg);border-color:var(--clay-line);color:var(--clay)}
+
 /* キーボードのキー表示 */
 kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
   border:1px solid var(--line-2);background:var(--sunken);color:var(--dim);
@@ -258,6 +264,8 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
     <div class="setting-box">
       <label class="switch"><input type="checkbox" id="maskmode">
         <span>記憶モード<span class="sub">手持ちの単位をぼかす。頭の中で計算する練習になる</span></span></label>
+      <label class="switch" style="margin-top:10px"><input type="checkbox" id="undolimit">
+        <span>もどす回数を制限する<span class="sub">章ごとに 第1章5回・第2章3回・第3章2回。進む前に考える練習になる（やり直しは何度でもできます）</span></span></label>
       <label class="switch" style="margin-top:10px"><input type="checkbox" id="mute"><span>効果音</span></label>
       <div class="setting-row">
         <div class="setting-lbl">迷路の壁の色<span class="sub">白い壁が背景に溶けて見えないときは変えてください</span></div>
@@ -305,7 +313,7 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
     <div class="padrow">
       <div class="joy" id="joy" title="ドラッグで移動（キーボードは矢印キー・WASD）"><div class="knob" id="knob"></div></div>
       <div class="controls">
-        <button class="btn sm" id="btn-undo">↩ もどす<kbd>Z</kbd></button>
+        <button class="btn sm" id="btn-undo">↩ もどす<span class="ucount" id="undo-left"></span><kbd>Z</kbd></button>
         <button class="btn sm" id="btn-reset">やり直し<kbd>R</kbd></button>
         <button class="btn sm" id="btn-hint">💡 段階ヒント<kbd>H</kbd></button>
       </div>
@@ -317,7 +325,8 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
       <span class="chip pow">√</span>指数を半分に　
       <span class="chip gate">🔒</span>関門（条件を満たす単位でないと通れない）<br>
       <b>後戻りできない。</b> 通った道は崩れて穴になる。手持ちが増えると球が大きくなり、
-      同じ単位で割ると<b>相殺</b>して小さくなる。<br>
+      同じ単位で割ると<b>相殺</b>して小さくなる。
+      <b>「もどす」は回数制限つき</b>（ボタンの数字が残り回数）。使い切っても「やり直し」は何度でもできる。<br>
       <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD<br>
       <b>キーボード</b>　<kbd>Z</kbd>もどす　<kbd>R</kbd>やり直し　<kbd>H</kbd>段階ヒント　<kbd>T</kbd>ステージのヒント　<kbd>Esc</kbd>ステージ選択
     </div>
@@ -334,7 +343,8 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
     <h4>2. 道に浮かぶ単位の球を拾う</h4>
     <p><span class="chip mul">×kg</span><span class="chip div">÷s</span> の球を通ると、手持ちの単位にその演算が起きます。手持ちが増えるほど自分の球は<b>大きく</b>なり、同じ単位で割ると<b>相殺</b>して小さくなります。すべて消せば無次元です。</p>
     <h4>3. 後戻りできない</h4>
-    <p>一度通った道は<b>崩れて穴になり</b>、二度と通れません。分かれ道でどちらを選ぶかが、そのまま「どの演算を使うか」の決定になります。行き止まりに入ったら「もどす」か「やり直し」で戻れます。</p>
+    <p>一度通った道は<b>崩れて穴になり</b>、二度と通れません。分かれ道でどちらを選ぶかが、そのまま「どの演算を使うか」の決定になります。</p>
+    <p><b>「もどす」には回数制限があります。</b>第1章は5回、第2章は3回、第3章は2回です（ボタンの数字が残り回数）。無制限だと「適当に進んで違ったら戻す」で解けてしまい、進む前に考える意味がなくなるためです。<b>使い切っても「やり直し」は何度でもできる</b>ので、詰まることはありません。設定で制限を外すこともできます。</p>
     <h4>4. 関門</h4>
     <p><span class="chip gate">🔒</span> は、書かれた条件（例：<b>kg</b>＝kgを持っている、<b>¬m</b>＝mを含まない、<b>1</b>＝無次元）を満たす手持ちでないと通れません。「どの順番で拾うか」が問われます。</p>
     <h4>5. 次元距離バー</h4>
@@ -1940,7 +1950,7 @@ var R3 = (function () {
     G = {
       stage: st, x: st.start.x, y: st.start.y, px: st.start.x, py: st.start.y,
       hand: vnew(st.startV), visited: vis,
-      steps: 0, hints: 0, undos: 0, combo: 0, cancels: 0,
+      steps: 0, hints: 0, undos: 0, combo: 0, cancels: 0, undoLeft: undoBudget(st),
       history: [], done: false, anim: null, pop: null, bump: null,
       masked: !!save.maskMode
     };
@@ -2030,8 +2040,19 @@ var R3 = (function () {
     $('dist-fill').style.width = Math.max(0, Math.min(100, Math.round((1 - d / d0) * 100))) + '%';
     $('dist-num').textContent = d === 0 ? 'ぴったり！' : 'あと ' + d;
     $('steps').textContent = G.steps;
-    $('btn-undo').disabled = G.history.length === 0;
+    $('btn-undo').disabled = G.history.length === 0 || G.undoLeft <= 0;
+    $('undo-left').textContent = G.undoLeft === Infinity ? '' : G.undoLeft;
+    $('undo-left').className = G.undoLeft === Infinity ? 'hidden'
+      : (G.undoLeft === 0 ? 'ucount out' : 'ucount');
     if (msg) toast(msg, kind);
+  }
+
+  /* ---------- もどす回数 ----------
+     章が進むほど厳しくする。使い切っても「やり直し」は無制限なので詰まない。 */
+  var UNDO_BUDGET = { 1: 5, 2: 3, 3: 2 };
+  function undoBudget(st) {
+    if (save.undoLimit === false) return Infinity;
+    return UNDO_BUDGET[+String(st.id).charAt(0)] || 3;
   }
 
   /* ---------- 移動 ---------- */
@@ -2115,12 +2136,19 @@ var R3 = (function () {
   }
   function undo() {
     if (!G.history.length) return;
+    if (G.undoLeft <= 0) {
+      SE.stuck();
+      toast('もどすを使い切った。「やり直し」で最初からやり直せる。', '', 4200);
+      return;
+    }
+    G.undoLeft--;
     var h = G.history.pop();
     var fx0 = G.px, fy0 = G.py;
     G.x = h.x; G.y = h.y; G.hand = h.hand; G.visited = h.visited; G.steps = h.steps; G.combo = h.combo;
     G.undos++;
     startAnim(fx0, fy0, G.x, G.y);
-    update('1手もどした（' + G.undos + '回目）', '');
+    update(G.undoLeft === Infinity ? '1手もどした（' + G.undos + '回目）'
+      : '1手もどした。のこり ' + G.undoLeft + ' 回', '');
   }
   function reset() {
     var st = G.stage;
@@ -2128,6 +2156,7 @@ var R3 = (function () {
     G.hand = vnew(st.startV);
     G.visited = new Uint8Array(st.w * st.h); G.visited[G.y * st.w + G.x] = 1;
     G.steps = 0; G.history = []; G.anim = null; G.combo = 0; G.undos++;
+    G.undoLeft = undoBudget(st);
     update('やり直し', '');
   }
 
@@ -2348,6 +2377,12 @@ var R3 = (function () {
     var mm = $('maskmode');
     mm.checked = !!save.maskMode;
     mm.onchange = function () { save.maskMode = mm.checked; persist(); if (G) { G.masked = mm.checked; update('', ''); } };
+    var ul = $('undolimit');
+    ul.checked = save.undoLimit !== false;
+    ul.onchange = function () {
+      save.undoLimit = ul.checked; persist();
+      if (G && !G.done) { G.undoLeft = undoBudget(G.stage); update('', ''); }
+    };
     var mu = $('mute');
     mu.checked = !muted;
     mu.onchange = function () { muted = !mu.checked; save.muted = muted; persist(); };

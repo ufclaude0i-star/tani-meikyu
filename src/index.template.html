@@ -44,6 +44,8 @@
     <div class="setting-box">
       <label class="switch"><input type="checkbox" id="maskmode">
         <span>記憶モード<span class="sub">手持ちの単位をぼかす。頭の中で計算する練習になる</span></span></label>
+      <label class="switch" style="margin-top:10px"><input type="checkbox" id="undolimit">
+        <span>もどす回数を制限する<span class="sub">章ごとに 第1章5回・第2章3回・第3章2回。進む前に考える練習になる（やり直しは何度でもできます）</span></span></label>
       <label class="switch" style="margin-top:10px"><input type="checkbox" id="mute"><span>効果音</span></label>
       <div class="setting-row">
         <div class="setting-lbl">迷路の壁の色<span class="sub">白い壁が背景に溶けて見えないときは変えてください</span></div>
@@ -91,7 +93,7 @@
     <div class="padrow">
       <div class="joy" id="joy" title="ドラッグで移動（キーボードは矢印キー・WASD）"><div class="knob" id="knob"></div></div>
       <div class="controls">
-        <button class="btn sm" id="btn-undo">↩ もどす<kbd>Z</kbd></button>
+        <button class="btn sm" id="btn-undo">↩ もどす<span class="ucount" id="undo-left"></span><kbd>Z</kbd></button>
         <button class="btn sm" id="btn-reset">やり直し<kbd>R</kbd></button>
         <button class="btn sm" id="btn-hint">💡 段階ヒント<kbd>H</kbd></button>
       </div>
@@ -103,7 +105,8 @@
       <span class="chip pow">√</span>指数を半分に　
       <span class="chip gate">🔒</span>関門（条件を満たす単位でないと通れない）<br>
       <b>後戻りできない。</b> 通った道は崩れて穴になる。手持ちが増えると球が大きくなり、
-      同じ単位で割ると<b>相殺</b>して小さくなる。<br>
+      同じ単位で割ると<b>相殺</b>して小さくなる。
+      <b>「もどす」は回数制限つき</b>（ボタンの数字が残り回数）。使い切っても「やり直し」は何度でもできる。<br>
       <b>そうさ</b>　画面下のスティック／となりのマスをタップ／スワイプ／矢印キー・WASD<br>
       <b>キーボード</b>　<kbd>Z</kbd>もどす　<kbd>R</kbd>やり直し　<kbd>H</kbd>段階ヒント　<kbd>T</kbd>ステージのヒント　<kbd>Esc</kbd>ステージ選択
     </div>
@@ -120,7 +123,8 @@
     <h4>2. 道に浮かぶ単位の球を拾う</h4>
     <p><span class="chip mul">×kg</span><span class="chip div">÷s</span> の球を通ると、手持ちの単位にその演算が起きます。手持ちが増えるほど自分の球は<b>大きく</b>なり、同じ単位で割ると<b>相殺</b>して小さくなります。すべて消せば無次元です。</p>
     <h4>3. 後戻りできない</h4>
-    <p>一度通った道は<b>崩れて穴になり</b>、二度と通れません。分かれ道でどちらを選ぶかが、そのまま「どの演算を使うか」の決定になります。行き止まりに入ったら「もどす」か「やり直し」で戻れます。</p>
+    <p>一度通った道は<b>崩れて穴になり</b>、二度と通れません。分かれ道でどちらを選ぶかが、そのまま「どの演算を使うか」の決定になります。</p>
+    <p><b>「もどす」には回数制限があります。</b>第1章は5回、第2章は3回、第3章は2回です（ボタンの数字が残り回数）。無制限だと「適当に進んで違ったら戻す」で解けてしまい、進む前に考える意味がなくなるためです。<b>使い切っても「やり直し」は何度でもできる</b>ので、詰まることはありません。設定で制限を外すこともできます。</p>
     <h4>4. 関門</h4>
     <p><span class="chip gate">🔒</span> は、書かれた条件（例：<b>kg</b>＝kgを持っている、<b>¬m</b>＝mを含まない、<b>1</b>＝無次元）を満たす手持ちでないと通れません。「どの順番で拾うか」が問われます。</p>
     <h4>5. 次元距離バー</h4>

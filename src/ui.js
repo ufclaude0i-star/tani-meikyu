@@ -107,7 +107,7 @@
     G = {
       stage: st, x: st.start.x, y: st.start.y, px: st.start.x, py: st.start.y,
       hand: vnew(st.startV), visited: vis,
-      steps: 0, hints: 0, undos: 0, combo: 0, cancels: 0,
+      steps: 0, hints: 0, undos: 0, combo: 0, cancels: 0, undoLeft: undoBudget(st),
       history: [], done: false, anim: null, pop: null, bump: null,
       masked: !!save.maskMode
     };
@@ -197,8 +197,19 @@
     $('dist-fill').style.width = Math.max(0, Math.min(100, Math.round((1 - d / d0) * 100))) + '%';
     $('dist-num').textContent = d === 0 ? 'ぴったり！' : 'あと ' + d;
     $('steps').textContent = G.steps;
-    $('btn-undo').disabled = G.history.length === 0;
+    $('btn-undo').disabled = G.history.length === 0 || G.undoLeft <= 0;
+    $('undo-left').textContent = G.undoLeft === Infinity ? '' : G.undoLeft;
+    $('undo-left').className = G.undoLeft === Infinity ? 'hidden'
+      : (G.undoLeft === 0 ? 'ucount out' : 'ucount');
     if (msg) toast(msg, kind);
+  }
+
+  /* ---------- もどす回数 ----------
+     章が進むほど厳しくする。使い切っても「やり直し」は無制限なので詰まない。 */
+  var UNDO_BUDGET = { 1: 5, 2: 3, 3: 2 };
+  function undoBudget(st) {
+    if (save.undoLimit === false) return Infinity;
+    return UNDO_BUDGET[+String(st.id).charAt(0)] || 3;
   }
 
   /* ---------- 移動 ---------- */
@@ -282,12 +293,19 @@
   }
   function undo() {
     if (!G.history.length) return;
+    if (G.undoLeft <= 0) {
+      SE.stuck();
+      toast('もどすを使い切った。「やり直し」で最初からやり直せる。', '', 4200);
+      return;
+    }
+    G.undoLeft--;
     var h = G.history.pop();
     var fx0 = G.px, fy0 = G.py;
     G.x = h.x; G.y = h.y; G.hand = h.hand; G.visited = h.visited; G.steps = h.steps; G.combo = h.combo;
     G.undos++;
     startAnim(fx0, fy0, G.x, G.y);
-    update('1手もどした（' + G.undos + '回目）', '');
+    update(G.undoLeft === Infinity ? '1手もどした（' + G.undos + '回目）'
+      : '1手もどした。のこり ' + G.undoLeft + ' 回', '');
   }
   function reset() {
     var st = G.stage;
@@ -295,6 +313,7 @@
     G.hand = vnew(st.startV);
     G.visited = new Uint8Array(st.w * st.h); G.visited[G.y * st.w + G.x] = 1;
     G.steps = 0; G.history = []; G.anim = null; G.combo = 0; G.undos++;
+    G.undoLeft = undoBudget(st);
     update('やり直し', '');
   }
 
@@ -515,6 +534,12 @@
     var mm = $('maskmode');
     mm.checked = !!save.maskMode;
     mm.onchange = function () { save.maskMode = mm.checked; persist(); if (G) { G.masked = mm.checked; update('', ''); } };
+    var ul = $('undolimit');
+    ul.checked = save.undoLimit !== false;
+    ul.onchange = function () {
+      save.undoLimit = ul.checked; persist();
+      if (G && !G.done) { G.undoLeft = undoBudget(G.stage); update('', ''); }
+    };
     var mu = $('mute');
     mu.checked = !muted;
     mu.onchange = function () { muted = !mu.checked; save.muted = muted; persist(); };

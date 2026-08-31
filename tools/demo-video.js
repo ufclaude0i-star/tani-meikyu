@@ -119,7 +119,7 @@ const INIT = () => {
   /* ============ 2. 道が崩れる（0:11–0:21） ============ */
   mark('scene2 道が崩れる');
   cue('n2');
-  await cap('一度通った道は<em>崩れて、二度と通れない</em>');
+  await cap('一度通った道は<em>崩れて、二度と通れない</em>。もどせる回数にも限りがある');
   for (const n of pathA.slice(4, 7)) await step(n, 560);
   await wait(2100);
   await cap('だから分かれ道の選択が、そのまま「どの演算を使うか」の決定になる');
