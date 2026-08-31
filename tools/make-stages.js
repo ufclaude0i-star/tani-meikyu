@@ -30,6 +30,7 @@ ${d.grid.map(r => '    ' + JSON.stringify(r)).join(',\n')}
 ${legend}
   },
   tip: ${JSON.stringify(d.tip)},
+  meaning: ${JSON.stringify(d.meaning)},
   formula: ${JSON.stringify(d.formula)},
   quiz: ${JSON.stringify(d.quiz)}
 }`;

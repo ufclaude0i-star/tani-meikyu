@@ -264,7 +264,7 @@ function build(spec, seed) {
   const def = {
     id: spec.id, chapter: spec.chapter, title: spec.title, story: spec.story,
     start: spec.start, goal: spec.goal, grid, legend,
-    tip: spec.tip, formula: spec.formula, quiz: spec.quiz
+    tip: spec.tip, meaning: spec.meaning, formula: spec.formula, quiz: spec.quiz
   };
   let st;
   try { st = core.buildStage(def); } catch (e) { return null; }

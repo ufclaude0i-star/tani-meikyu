@@ -198,6 +198,10 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
 .star-rule.got{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
 .modal .stars-big{font-size:26px;color:var(--star);letter-spacing:8px;text-align:center;margin:12px 0 10px}
 .modal .stars-big .off{color:#E7E5E4}
+/* クリア画面：公式の上に「何を測っている量なのか」を1行で出す。
+   意味を先に読ませてから記号を見せる順にするため */
+.meaning{text-align:center;font-size:12.5px;font-weight:600;color:var(--green);
+  margin:16px 0 -8px}
 .formula{background:var(--sunken);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;
   text-align:center;font-size:16px;font-weight:600;color:var(--txt);margin:16px 0}
 .quiz .q{font-weight:700;margin:18px 0 10px;font-size:14px}
@@ -225,8 +229,22 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
 
 .masked{filter:blur(8px)}
 @media (max-width:420px){
-  .wrap{padding:16px 12px 32px}
+  .wrap{padding:12px 12px 32px}
   .joy{width:92px;height:92px} .joy .knob{width:46px;height:46px;margin:-23px 0 0 -23px}
   .controls .btn{padding:9px 6px;font-size:12.5px}
   kbd{min-width:1.4em;padding:0 4px}
+  /* スマホでは「もどす／やり直し／ヒント」とスティックが画面外に落ちていた。
+     盤面を少し縮め、上の余白を詰めて、操作系を1画面目に収める。
+     ここを削ると、スマホの人は毎回スクロールしないと操作できない。 */
+  /* 盤面の高さは画面の割合ではなく「操作系のぶんを引いた残り」から決める。
+     割合だと画面が小さい機種でボタンが画面外に落ちる（360x740 で実際に落ちていた）。
+     460px は、盤面より上下にある固定要素の実測値。tools/layout-test.js が検査する。 */
+  .stage3d{height:clamp(190px,calc(100vh - 460px),520px)}
+  /* アドレスバーで実際に見える高さが変わる端末では dvh を使う */
+  @supports (height:100dvh){ .stage3d{height:clamp(190px,calc(100dvh - 460px),520px)} }
+  .gamebar{margin-bottom:8px} .story{margin-bottom:8px;line-height:1.7}
+  .unitbar{margin-bottom:8px}
+  .distbar{margin-top:8px;padding:10px 12px}
+  .hud-star{margin-bottom:7px;padding-bottom:6px}
+  .padrow{margin-top:9px}
 }

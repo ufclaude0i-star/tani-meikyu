@@ -205,6 +205,10 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
 .star-rule.got{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
 .modal .stars-big{font-size:26px;color:var(--star);letter-spacing:8px;text-align:center;margin:12px 0 10px}
 .modal .stars-big .off{color:#E7E5E4}
+/* クリア画面：公式の上に「何を測っている量なのか」を1行で出す。
+   意味を先に読ませてから記号を見せる順にするため */
+.meaning{text-align:center;font-size:12.5px;font-weight:600;color:var(--green);
+  margin:16px 0 -8px}
 .formula{background:var(--sunken);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;
   text-align:center;font-size:16px;font-weight:600;color:var(--txt);margin:16px 0}
 .quiz .q{font-weight:700;margin:18px 0 10px;font-size:14px}
@@ -232,10 +236,24 @@ kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border-radius:5px;
 
 .masked{filter:blur(8px)}
 @media (max-width:420px){
-  .wrap{padding:16px 12px 32px}
+  .wrap{padding:12px 12px 32px}
   .joy{width:92px;height:92px} .joy .knob{width:46px;height:46px;margin:-23px 0 0 -23px}
   .controls .btn{padding:9px 6px;font-size:12.5px}
   kbd{min-width:1.4em;padding:0 4px}
+  /* スマホでは「もどす／やり直し／ヒント」とスティックが画面外に落ちていた。
+     盤面を少し縮め、上の余白を詰めて、操作系を1画面目に収める。
+     ここを削ると、スマホの人は毎回スクロールしないと操作できない。 */
+  /* 盤面の高さは画面の割合ではなく「操作系のぶんを引いた残り」から決める。
+     割合だと画面が小さい機種でボタンが画面外に落ちる（360x740 で実際に落ちていた）。
+     460px は、盤面より上下にある固定要素の実測値。tools/layout-test.js が検査する。 */
+  .stage3d{height:clamp(190px,calc(100vh - 460px),520px)}
+  /* アドレスバーで実際に見える高さが変わる端末では dvh を使う */
+  @supports (height:100dvh){ .stage3d{height:clamp(190px,calc(100dvh - 460px),520px)} }
+  .gamebar{margin-bottom:8px} .story{margin-bottom:8px;line-height:1.7}
+  .unitbar{margin-bottom:8px}
+  .distbar{margin-top:8px;padding:10px 12px}
+  .hud-star{margin-bottom:7px;padding-bottom:6px}
+  .padrow{margin-top:9px}
 }
 </style>
 </head>
@@ -645,7 +663,7 @@ function buildStage(def) {
     w: w, h: h, cells: cells, start: start, goal: goal,
     startV: parseUnit(def.start), goalV: parseUnit(def.goal),
     startStr: def.start, goalStr: def.goal,
-    tip: def.tip, formula: def.formula, quiz: def.quiz, par: def.par || null
+    tip: def.tip, meaning: def.meaning, formula: def.formula, quiz: def.quiz, par: def.par || null
   };
 }
 
@@ -815,7 +833,7 @@ if (typeof module !== 'undefined' && module.exports) {
 var STAGE_DEFS = [
 {
   id: "1-1", chapter: "第1章 力学の単位", title: "よけいなものを捨てる",
-  story: "一度通った道は崩れて戻れない。まずは持っている m を捨てて EXIT へ。",
+  story: "同じものどうしで割ると、単位は消えて「何倍か」だけが残る。持っている m を捨てて EXIT へ。",
   start: "m", goal: "1", par: 5,
   grid: [
     "#########",
@@ -831,13 +849,14 @@ var STAGE_DEFS = [
     b: {"t":"op","op":"*","u":"m"},
     c: {"t":"op","op":"*","u":"kg"}
   },
-  tip: "÷m を踏むと m が1つ減る。m ÷ m = 1（無次元）。",
+  tip: "「長さ ÷ 長さ」は、何倍かを表すただの数。倍率に単位はいらない。だから m を m で割ると消える。",
+  meaning: "同じ種類の量どうしの比には、単位がない",
   formula: "m ÷ m = 1",
   quiz: {"q":"「無次元」の量はどれ？","choices":["速さ","摩擦係数","加速度","力"],"ans":1,"exp":"摩擦係数 μ は 力÷力 なので単位が消える。無次元量は単位を持たない。"}
 },
 {
   id: "1-2", chapter: "第1章 力学の単位", title: "速さをつくる",
-  story: "速さ = 距離 ÷ 時間。分かれ道はどれも一度きり。選ぶ前に考えよう。",
+  story: "速さとは「決まった時間に、どれだけ進めるか」。だから距離を時間で割る。",
   start: "m", goal: "m/s", par: 7,
   grid: [
     "###########",
@@ -856,13 +875,14 @@ var STAGE_DEFS = [
     c: {"t":"op","op":"/","u":"kg"},
     d: {"t":"op","op":"/","u":"kg"}
   },
-  tip: "「速さ」は m/s。距離を時間で割る、つまり ÷s。",
+  tip: "1秒あたり何メートル進むか、を考える。「1秒あたり」は時間で割るということ。だから ÷s。",
+  meaning: "速さ＝1秒あたりに進む距離",
   formula: "v = x / t  →  m / s",
   quiz: {"q":"m/s をもう一度「÷s」で割ると何になる？","choices":["速さ","加速度","力","距離"],"ans":1,"exp":"m/s ÷ s = m/s²。これは加速度の単位。"}
 },
 {
   id: "1-3", chapter: "第1章 力学の単位", title: "力をつくる",
-  story: "F = ma。質量 kg から、力 N をつくれ。N = kg·m/s² だ。",
+  story: "力とは「物の速さを、どれだけ勢いよく変えられるか」。重い物ほど、変えるのに大きな力がいる。",
   start: "kg", goal: "N", par: 9,
   grid: [
     "#############",
@@ -887,13 +907,14 @@ var STAGE_DEFS = [
     g: {"t":"op","op":"*","u":"m"},
     h: {"t":"op","op":"/","u":"m"}
   },
-  tip: "N = kg·m/s²。kg に「×m」を1回、「÷s」を2回。",
+  tip: "力＝質量×加速度。加速度は「速さが1秒でどれだけ変わるか」なので、速さをもう一度 時間で割ったもの。 つまり質量に、距離を掛けて時間で2回割る。",
+  meaning: "力＝質量 ×（速さの変わりかた）",
   formula: "F = ma  →  N = kg · m/s²",
   quiz: {"q":"1 N はどれと同じ？","choices":["kg·m/s","kg·m/s²","kg·m²/s²","kg/s²"],"ans":1,"exp":"F = ma の右辺は kg × m/s² = kg·m/s²。"}
 },
 {
   id: "1-4", chapter: "第1章 力学の単位", title: "関門をひらく",
-  story: "関門（🔒）は条件を満たす単位でないと通れない。速さ m/s から仕事 J をつくれ。",
+  story: "動いている物は、それだけでエネルギーを持っている。その大きさは「質量 × 速さ × 速さ」で決まる。",
   start: "m/s", goal: "J", par: 15,
   grid: [
     "#############",
@@ -920,13 +941,14 @@ var STAGE_DEFS = [
     i: {"t":"op","op":"*","u":"s"},
     j: {"t":"op","op":"*","u":"s"}
   },
-  tip: "J = kg·m²/s²。関門の条件を満たす順番で拾おう。",
+  tip: "運動エネルギーは 質量 × 速さの2乗。いま持っているのは速さ1つぶんなので、 質量を掛け、さらに速さをもう1つぶん（距離を掛けて時間で割る）掛ける。",
+  meaning: "エネルギー＝質量 × 速さ²",
   formula: "W = Fx  →  J = N·m = kg·m²/s²",
   quiz: {"q":"1 J はどれと同じ？","choices":["N·m","N/m","N·s","N/s"],"ans":0,"exp":"仕事 = 力 × 距離 なので J = N·m。"}
 },
 {
   id: "2-1", chapter: "第2章 相殺と関門", title: "相殺のコツ",
-  story: "同じ単位を掛けて割れば、単位は消える（相殺）。J から仕事率 W へ。",
+  story: "仕事率とは「1秒あたり、どれだけのエネルギーを使うか」。同じ仕事でも、速く終わらせるほど仕事率は大きい。",
   start: "J", goal: "W", par: 10,
   grid: [
     "#############",
@@ -956,13 +978,14 @@ var STAGE_DEFS = [
     j: {"t":"op","op":"*","u":"s"},
     k: {"t":"op","op":"*","u":"m"}
   },
-  tip: "W = J/s。途中で kg を手放して関門をくぐり、あとで拾い直す。",
+  tip: "「1秒あたり」と言われたら、時間で割る。エネルギーを時間で割ればよい。 途中の関門は、いったん質量を手放してからくぐる。",
+  meaning: "仕事率＝1秒あたりに使うエネルギー",
   formula: "P = W / t  →  W = J/s = kg·m²/s³",
   quiz: {"q":"1 W はどれと同じ？","choices":["J·s","J/s","N·s","N/m"],"ans":1,"exp":"仕事率 = 仕事 ÷ 時間 なので W = J/s。"}
 },
 {
   id: "2-2", chapter: "第2章 相殺と関門", title: "圧力の迷宮",
-  story: "力 N から圧力 Pa をつくれ。Pa = N/m²。",
+  story: "圧力とは「同じ力を、どれだけ狭い面に集中させたか」。画びょうが刺さるのは、先が細いから。",
   start: "N", goal: "Pa", par: 19,
   grid: [
     "###############",
@@ -994,13 +1017,14 @@ var STAGE_DEFS = [
     l: {"t":"op","op":"*","u":"kg"},
     m: {"t":"op","op":"*","u":"m"}
   },
-  tip: "Pa = N/m²。÷m が2回。途中の ×s と ÷s は相殺する。",
+  tip: "力を面積で割ると圧力になる。面積は「たて × よこ」で長さが2つぶん。だから長さで2回割る。",
+  meaning: "圧力＝力 ÷ 面積",
   formula: "p = F / S  →  Pa = N/m² = kg/(m·s²)",
   quiz: {"q":"1 Pa はどれと同じ？","choices":["N·m²","N/m²","N/m","N·m"],"ans":1,"exp":"圧力 = 力 ÷ 面積 なので Pa = N/m²。"}
 },
 {
   id: "2-3", chapter: "第2章 相殺と関門", title: "無次元へ帰れ",
-  story: "力 N から、すべての単位を消し去れ。球が消えたら勝ちだ。",
+  story: "同じ種類の量どうしを割ると、単位が消えて「何倍か」だけが残る。力を力で割って、単位を持たない数に戻せ。",
   start: "N", goal: "1", par: 15,
   grid: [
     "###############",
@@ -1032,13 +1056,14 @@ var STAGE_DEFS = [
     l: {"t":"op","op":"/","u":"s"},
     m: {"t":"op","op":"*","u":"kg"}
   },
-  tip: "N = kg·m/s²。kg を1つ、m を1つ消し、s を2つ掛ければ無次元。",
+  tip: "摩擦係数は「摩擦力 ÷ 垂直抗力」。力を力で割るので単位が残らない。 力を質量・長さ・時間に分解して、1つずつ消していく。",
+  meaning: "力 ÷ 力＝無次元（単位を持たない数）",
   formula: "摩擦係数 μ = F / N → N/N = 1（無次元）",
   quiz: {"q":"次のうち無次元でないものは？","choices":["屈折率","ひずみ","マッハ数","運動量"],"ans":3,"exp":"運動量は kg·m/s。屈折率・ひずみ・マッハ数はどれも「同じ単位どうしの比」で無次元。"}
 },
 {
   id: "2-4", chapter: "第2章 相殺と関門", title: "長い道のり",
-  story: "質量 kg だけを持って出発。関門は2つ。エネルギー J にたどり着け。",
+  story: "質量だけを持って出発。動いている物が持つエネルギーは「質量 × 速さ × 速さ」で決まる。",
   start: "kg", goal: "J", par: 19,
   grid: [
     "###############",
@@ -1073,13 +1098,14 @@ var STAGE_DEFS = [
     o: {"t":"op","op":"*","u":"kg"},
     p: {"t":"op","op":"/","u":"kg"}
   },
-  tip: "J = kg·m²/s²。×m が2回、÷s が2回。途中の ×s と ÷s は相殺する。",
+  tip: "質量に、速さを2つぶん掛ける。速さ1つぶんは「距離を掛けて時間で割る」なので、それを2回くり返す。",
+  meaning: "エネルギー＝質量 × 速さ²",
   formula: "E = ½mv²  →  kg · (m/s)² = kg·m²/s²",
   quiz: {"q":"運動エネルギー ½mv² の単位を組み立てると？","choices":["kg·m/s","kg·m²/s²","kg·m²/s³","kg/(m·s²)"],"ans":1,"exp":"kg × (m/s)² = kg·m²/s² = J。"}
 },
 {
   id: "3-1", chapter: "第3章 電気・熱・累乗", title: "電気量をためる",
-  story: "電流 A から電気量 C をつくれ。Q = It。",
+  story: "電流とは「1秒あたりに流れる電気の量」。ならば時間を掛ければ、流れた電気の総量になる。",
   start: "A", goal: "C", par: 15,
   grid: [
     "###############",
@@ -1110,13 +1136,14 @@ var STAGE_DEFS = [
     k: {"t":"op","op":"/","u":"A"},
     l: {"t":"op","op":"/","u":"A"}
   },
-  tip: "C = A·s。途中で拾う ×m と ÷m は相殺するので気にしなくてよい。",
+  tip: "「1秒あたりの量」に時間を掛けると総量になる。水道の勢い × 出しっぱなしにした時間 ＝ 出た水の量、と同じ。",
+  meaning: "電気量＝電流 × 時間",
   formula: "Q = It  →  C = A·s",
   quiz: {"q":"1 C はどれと同じ？","choices":["A/s","A·s","A·s²","A/s²"],"ans":1,"exp":"電気量 = 電流 × 時間 なので C = A·s。"}
 },
 {
   id: "3-2", chapter: "第3章 電気・熱・累乗", title: "電圧をつくる",
-  story: "V = J/C。エネルギー J から電圧 V へ。C は A·s だ。",
+  story: "電圧とは「電気ひとつぶんが運べるエネルギー」。同じ電気の量でも、電圧が高いほど大きな仕事ができる。",
   start: "J", goal: "V", par: 21,
   grid: [
     "#################",
@@ -1152,13 +1179,14 @@ var STAGE_DEFS = [
     n: {"t":"op","op":"*","u":"A"},
     o: {"t":"op","op":"*","u":"s"}
   },
-  tip: "V = J/C = J/(A·s)。÷A と ÷s。×kg と ÷kg は相殺する。",
+  tip: "「ひとつあたり」と言われたら、個数で割る。エネルギーを電気の量で割ればよい。 電気の量は「電流 × 時間」なので、電流でも時間でも割ることになる。",
+  meaning: "電圧＝電気ひとつぶんが運ぶエネルギー",
   formula: "V = W / Q  →  V = J/C = kg·m²/(s³·A)",
   quiz: {"q":"1 V はどれと同じ？","choices":["J·C","J/C","C/J","J/A"],"ans":1,"exp":"電圧は「1 C あたりのエネルギー」なので V = J/C。"}
 },
 {
   id: "3-3", chapter: "第3章 電気・熱・累乗", title: "比熱の谷",
-  story: "比熱容量は「1 kg を1 K あげるのに必要なエネルギー」。J から J/(kg·K) へ。",
+  story: "比熱とは「1 kg の物を1度あたためるのに、どれだけのエネルギーがいるか」。水は温まりにくく、金属は温まりやすい。",
   start: "J", goal: "J/kg/K", par: 21,
   grid: [
     "#################",
@@ -1194,13 +1222,14 @@ var STAGE_DEFS = [
     n: {"t":"op","op":"*","u":"K"},
     o: {"t":"op","op":"*","u":"kg"}
   },
-  tip: "J/(kg·K) = m²/(s²·K)。÷kg と ÷K。×m と ÷m は相殺する。",
+  tip: "「1 kg あたり」で質量で割り、「1度あたり」で温度で割る。「〜あたり」は割り算だと覚えておけばよい。",
+  meaning: "比熱＝1 kg を1度あげるのに必要なエネルギー",
   formula: "Q = mcΔT  →  c = Q/(mΔT) = J/(kg·K)",
   quiz: {"q":"比熱容量の単位はどれ？","choices":["J·kg·K","J/(kg·K)","J/K","J·K/kg"],"ans":1,"exp":"Q = mcΔT を c について解くと c = Q/(mΔT)。単位は J/(kg·K)。"}
 },
 {
   id: "3-4", chapter: "第3章 電気・熱・累乗", title: "√の橋",
-  story: "v = √(2gh)。√の橋は、すべての指数が偶数のときしか渡れない。",
+  story: "物は落ちるほど速くなる。落ちて得た速さは、重力の強さと落ちた距離だけで決まる。",
   start: "m/s^2", goal: "m/s", par: 17,
   grid: [
     "#################",
@@ -1234,13 +1263,14 @@ var STAGE_DEFS = [
     l: {"t":"op","op":"*","u":"kg"},
     m: {"t":"op","op":"/","u":"m"}
   },
-  tip: "√ は指数を半分にする。渡る直前に m²/s²（全部偶数乗）にしておくこと。",
+  tip: "加速度に距離を掛けると「速さの2乗」になる。√をとれば速さに戻る。 √の橋は、指数がすべて偶数のときしか渡れないので、渡る直前の形に気をつける。",
+  meaning: "落ちて得る速さ＝√(重力の強さ × 落ちた距離)",
   formula: "v = √(2gh)  →  √(m/s² · m) = √(m²/s²) = m/s",
   quiz: {"q":"√(m²/s²) は？","choices":["m/s","m²/s","m/s²","m"],"ans":0,"exp":"平方根は指数を半分にする：m² → m、s⁻² → s⁻¹。"}
 },
 {
   id: "3-5", chapter: "第3章 電気・熱・累乗", title: "万有引力定数",
-  story: "最終問題。F = GMm/r² より G = Fr²/(Mm)。力 N から G の単位をつくれ。",
+  story: "最終問題。万有引力の式に出てくる G は、両辺の単位をつじつま合わせするためだけに置かれた定数。その正体を単位から暴け。",
   start: "N", goal: "m^3/kg/s^2", par: 31,
   grid: [
     "#################",
@@ -1280,7 +1310,8 @@ var STAGE_DEFS = [
     r: {"t":"op","op":"/","u":"m"},
     t: {"t":"op","op":"/","u":"m"}
   },
-  tip: "G の単位は N·m²/kg² = m³/(kg·s²)。×m を2回、÷kg を2回。",
+  tip: "万有引力は「2つの質量を掛けて、距離の2乗で割り、G を掛けたもの」が力になる、という式。 G について解けば、力に距離を2つぶん掛けて、質量で2回割ったものになる。",
+  meaning: "G は、力と質量と距離のつじつまを合わせる定数",
   formula: "F = GMm/r²  →  G = N·m²/kg² = m³/(kg·s²)",
   quiz: {"q":"万有引力定数 G の単位は？","choices":["N·m²/kg²","N·kg²/m²","N·m/kg","N/(m²·kg)"],"ans":0,"exp":"F = GMm/r² を G について解くと G = Fr²/(Mm) → N·m²/kg²。"}
 }
@@ -2250,6 +2281,7 @@ var R3 = (function () {
       G.steps + ' 手（最短 ' + st.par + ' 手）／相殺 ' + G.cancels + ' 回' +
       (G.undos ? '／もどす ' + G.undos + ' 回' : '') + (G.hints ? '／ヒント ' + G.hints + ' 回' : '') +
       (G.masked ? '／🧠記憶モード' : '') + '</div>' +
+      (st.meaning ? '<div class="meaning">' + st.meaning + '</div>' : '') +
       '<div class="formula">' + st.formula + '</div>' +
       '<div class="quiz" id="quizbox"><div class="q">' + qz.q + '</div>' +
       qz.choices.map(function (c, i) { return '<button class="ch" data-i="' + i + '"><kbd>' + (i + 1) + '</kbd> ' + c + '</button>'; }).join('') +

@@ -388,6 +388,7 @@
       G.steps + ' 手（最短 ' + st.par + ' 手）／相殺 ' + G.cancels + ' 回' +
       (G.undos ? '／もどす ' + G.undos + ' 回' : '') + (G.hints ? '／ヒント ' + G.hints + ' 回' : '') +
       (G.masked ? '／🧠記憶モード' : '') + '</div>' +
+      (st.meaning ? '<div class="meaning">' + st.meaning + '</div>' : '') +
       '<div class="formula">' + st.formula + '</div>' +
       '<div class="quiz" id="quizbox"><div class="q">' + qz.q + '</div>' +
       qz.choices.map(function (c, i) { return '<button class="ch" data-i="' + i + '"><kbd>' + (i + 1) + '</kbd> ' + c + '</button>'; }).join('') +

@@ -73,11 +73,15 @@ function T(name, cond, detail) { (cond ? ok : issues).push(`${cond ? '✅' : '�
     }
     if (!targets.length) return { found: false };
     const [tx, ty] = targets[0];
-    for (let sy = 0; sy < r.height; sy += 4) for (let sx = 0; sx < r.width; sx += 4) {
+    // 最初に当たった点はマスの「境界」なので、1px ずれるととなりのマスになる。
+    // 当たる点をすべて集めて重心（＝マスの真ん中）を押す。
+    let n = 0, ax = 0, ay = 0;
+    for (let sy = 0; sy < r.height; sy += 2) for (let sx = 0; sx < r.width; sx += 2) {
       const hit = R3.pick(sx, sy);
-      if (hit && hit.col === tx && hit.row === ty) return { found: true, sx: sx + r.left, sy: sy + r.top, tx, ty };
+      if (hit && hit.col === tx && hit.row === ty) { n++; ax += sx; ay += sy; }
     }
-    return { found: false };
+    if (!n) return { found: false };
+    return { found: true, sx: Math.round(ax / n + r.left), sy: Math.round(ay / n + r.top), tx, ty, px: n };
   });
   if (tapResult.found) {
     await p.mouse.click(tapResult.sx, tapResult.sy);

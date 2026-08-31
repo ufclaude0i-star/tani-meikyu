@@ -265,7 +265,7 @@ function buildStage(def) {
     w: w, h: h, cells: cells, start: start, goal: goal,
     startV: parseUnit(def.start), goalV: parseUnit(def.goal),
     startStr: def.start, goalStr: def.goal,
-    tip: def.tip, formula: def.formula, quiz: def.quiz, par: def.par || null
+    tip: def.tip, meaning: def.meaning, formula: def.formula, quiz: def.quiz, par: def.par || null
   };
 }
 
