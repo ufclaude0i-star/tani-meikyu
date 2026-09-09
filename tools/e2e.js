@@ -25,8 +25,14 @@ const path = require('path');
     if (!pathArr) { errors.push(id + ': ページ内ソルバが解を返さない'); continue; }
     for (const d of pathArr) { await page.evaluate(n => { const M={'上':[0,-1],'下':[0,1],'左':[-1,0],'右':[1,0]}; __DBG.move(M[n][0], M[n][1]); }, d); }
     await page.waitForSelector('#modal-clear:not(.hidden)', { timeout: 3000 }).catch(() => errors.push(id + ': クリアモーダルが出ない'));
-    const txt = await page.textContent('#clear-body').catch(() => '');
-    const stars = (txt.match(/★/g) || []).length;
+    // ★は「点いている数」を数える。#clear-body 全体の★を数えると、
+    // 条件を示す「★★★ 達成」の行まで一緒に数えてしまい、星の異常を検出できなくなる。
+    const stars = await page.evaluate(() => {
+      const box = document.querySelector('.stars-big');
+      if (!box) return -1;
+      return (box.textContent.match(/★/g) || []).length - box.querySelectorAll('.off').length;
+    }).catch(() => -1);
+    if (stars < 1 || stars > 3) errors.push(id + ': 星の数がおかしい（' + stars + '）');
     console.log(`  ${id} クリア（${pathArr.length}手） 星表示:${stars}`);
     // クイズを正解して閉じる
     await page.evaluate(() => {
