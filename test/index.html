@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>単位迷宮 — 効果測定テスト</title>
+<meta name="description" content="単位迷宮で学習効果を測るための、事前・事後テスト。">
+<style>
+:root{
+  --bg:#FAFAF9; --card:#FFFFFF; --sunken:#F5F5F4;
+  --line:#E7E5E4; --line-2:#D6D3D1;
+  --txt:#1C1917; --dim:#78716C; --dim-2:#A8A29E; --ink:#171717;
+  --em:#4FC0A8; --em-d:#1B7A67; --em-bg:rgba(79,192,168,.13); --em-line:rgba(47,169,143,.40);
+  --clay:#B4503C; --clay-bg:#FCEFEC; --clay-line:#F4D5CD;
+  --blue:#2F6BB4; --blue-bg:#EFF5FC; --blue-line:#CBDDF2;
+  --r:14px; --r-sm:10px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%}
+body{background:var(--bg);color:var(--txt);line-height:1.7;
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  font-feature-settings:"palt" 1;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;color:inherit;cursor:pointer}
+.hidden{display:none !important}
+.wrap{max-width:620px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:20px;font-weight:700;margin:0 0 2px;letter-spacing:.04em}
+.sub{font-size:11px;letter-spacing:.22em;color:var(--dim-2);font-weight:600;margin-bottom:22px}
+h2{font-size:16px;font-weight:700;margin:0 0 10px}
+p{margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:12px}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:13px 18px;font-size:15px;font-weight:600;width:100%;transition:.12s;margin-top:8px}
+.btn:hover{background:var(--sunken);border-color:var(--line-2)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#333}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.note{font-size:12.5px;color:var(--dim)}
+.warn{background:#FDF6EC;border:1px solid #EEDFBE;border-radius:var(--r-sm);padding:12px 14px;font-size:13px;margin:12px 0}
+.hi{background:var(--em-bg);border:1px solid var(--em-line);border-radius:var(--r-sm);padding:12px 14px;font-size:13.5px;margin:12px 0}
+input[type=text]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);
+  font-size:16px;font-family:inherit;background:var(--card);color:var(--txt)}
+textarea{width:100%;min-height:150px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);
+  font:14px/1.7 ui-monospace,Consolas,monospace;background:var(--card);color:var(--txt);resize:vertical}
+.prog{display:flex;gap:4px;margin-bottom:16px}
+.prog i{flex:1;height:4px;border-radius:99px;background:var(--line)}
+.prog i.on{background:var(--em-d)}
+.q{font-size:16px;font-weight:700;margin-bottom:4px}
+.qs{font-size:12.5px;color:var(--dim);margin-bottom:12px}
+.ch{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-sm);padding:13px 15px;font-size:15px;font-weight:500;margin-bottom:8px;transition:.12s}
+.ch:hover{background:var(--sunken);border-color:var(--line-2)}
+.ch.sel{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue)}
+.ch b{display:inline-block;min-width:1.6em;font-weight:700;color:var(--dim)}
+.ch.sel b{color:var(--blue)}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.code{background:var(--sunken);border:1px solid var(--line-2);border-radius:var(--r-sm);
+  padding:14px;font:700 19px/1.5 ui-monospace,Consolas,monospace;text-align:center;
+  word-break:break-all;margin:10px 0;user-select:all}
+.timer{font:700 44px/1.1 ui-monospace,Consolas,monospace;text-align:center;margin:14px 0;letter-spacing:.02em}
+.timer.done{color:var(--em-d)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left}
+th{background:var(--sunken);font-weight:700}
+td.n,th.n{text-align:center;white-space:nowrap}
+.big{font-size:26px;font-weight:700;color:var(--em-d)}
+.foot{margin-top:26px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim-2)}
+.rowbtn{display:flex;gap:8px}
+.rowbtn .btn{margin-top:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>単位迷宮 — 効果測定テスト</h1>
+<div class="sub">DIMENSION LABYRINTH / EFFECT TEST</div>
+
+<!-- ============ トップ ============ -->
+<section id="s-top">
+  <div class="card">
+    <h2>協力してくれる人へ</h2>
+    <p>物理の「単位」に関する10問のテストを解いて、ゲームを20分あそんで、もう一度同じ10問を解きます。
+      <b>全部で35分ほど</b>です。採点は自動なので、何も準備はいりません。</p>
+    <p class="note">分からない問題は「わからない」を選んでください。今どれくらい分かるかを知りたいだけなので、
+      当てずっぽうで埋めないでください。</p>
+    <label class="note" for="who">名前（イニシャルやニックネームで構いません）</label>
+    <input type="text" id="who" placeholder="例: YI" maxlength="12" autocomplete="off">
+    <button class="btn primary" id="btn-begin">はじめる</button>
+  </div>
+  <div class="card">
+    <h2>主催者の人へ</h2>
+    <p class="note">みんなから送られてきた結果コードを貼りつけると、正答率と伸びを自動で集計します。</p>
+    <button class="btn" id="btn-agg">集計する</button>
+  </div>
+  <div id="resume" class="card hidden">
+    <h2>途中から再開</h2>
+    <p class="note" id="resume-note"></p>
+    <button class="btn primary" id="btn-resume">続きから</button>
+    <button class="btn" id="btn-clear">最初からやり直す</button>
+  </div>
+</section>
+
+<!-- ============ テスト ============ -->
+<section id="s-quiz" class="hidden">
+  <div class="prog" id="prog"></div>
+  <div class="note" id="phase-label"></div>
+  <div class="card">
+    <div class="q" id="q-text"></div>
+    <div class="qs" id="q-sub"></div>
+    <div id="q-choices"></div>
+  </div>
+  <div class="rowbtn">
+    <button class="btn" id="btn-prev">← まえへ</button>
+    <button class="btn primary" id="btn-next">つぎへ →</button>
+  </div>
+</section>
+
+<!-- ============ プレイ ============ -->
+<section id="s-play" class="hidden">
+  <div class="card">
+    <h2>ゲームを20分あそんでください</h2>
+    <p>下のボタンでゲームを開きます。<b>Level 1-1 から順番に</b>すすめてください。</p>
+    <div class="warn"><b>遊び方は人に聞かないでください。</b>分からないときは、ゲームの中の「あそびかた」を読んでください。
+      「ゲームだけで分かるか」を測っているので、教えてもらうと測定になりません。</div>
+    <a href="https://ufclaude0i-star.github.io/tani-meikyu/" target="_blank" rel="noopener">
+      <button class="btn primary">ゲームをひらく（別のタブで開きます）</button></a>
+    <div class="timer" id="timer">20:00</div>
+    <button class="btn" id="btn-timer">タイマーをスタート</button>
+    <p class="note" id="play-note">20分たったら、このページに戻って「事後テストへ」を押してください。
+      時間が来る前にやめても構いません。</p>
+    <label class="note" for="reached">どのステージまで進みましたか？（例: 2-3）</label>
+    <input type="text" id="reached" placeholder="例: 2-3" maxlength="8" autocomplete="off">
+    <button class="btn primary" id="btn-post">事後テストへ →</button>
+  </div>
+</section>
+
+<!-- ============ 結果 ============ -->
+<section id="s-done" class="hidden">
+  <div class="card">
+    <h2>おつかれさまでした</h2>
+    <p>この<b>結果コード</b>を、お願いした人に送ってください。（コピーして LINE などに貼り付けてください）</p>
+    <div class="code" id="result-code"></div>
+    <button class="btn" id="btn-copy">コードをコピー</button>
+    <div class="hi" id="result-detail"></div>
+    <p class="note">※ 答えそのものは送られません。点数だけです。</p>
+  </div>
+</section>
+
+<!-- ============ 集計 ============ -->
+<section id="s-agg" class="hidden">
+  <div class="card">
+    <h2>結果コードを貼りつけてください</h2>
+    <p class="note">1行に1人ぶん。送られてきたコードをそのまま貼れば大丈夫です。</p>
+    <textarea id="agg-in" placeholder="TM-YI-4/8-0/2&#10;TM-KT-5/9-1/2"></textarea>
+    <button class="btn primary" id="btn-calc">集計する</button>
+    <button class="btn" id="btn-back">もどる</button>
+  </div>
+  <div id="agg-out"></div>
+</section>
+
+<div class="foot">
+  単位迷宮 — Dimension Labyrinth ／ 第7回 学力向上アプリコンテスト 応募作品<br>
+  このページは効果測定のための道具で、作品本体ではありません。通信は行わず、答えは端末の中だけに保存されます。
+</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'tanimeikyu_test_v1';
+
+  /* ---- 問題。紙版（単位迷宮_事前事後テスト.pdf）と同じ10問 ----
+     問9・問10 は、ゲームに一度も出てこない量（ばね定数・密度）を意図的に選んでいる。
+     ここが伸びていれば「答えを覚えた」のではなく「組み立てられるようになった」根拠になる。 */
+  var Q = [
+    { q: '「速さ」の単位はどれですか。', c: ['m·s', 'm/s', 'm/s²', 's/m'], a: 1 },
+    { q: '「加速度」の単位はどれですか。', c: ['m/s', 'm/s²', 'm²/s', 'kg·m/s'], a: 1 },
+    { q: '力の単位 N（ニュートン）を kg・m・s だけで表すとどれですか。',
+      c: ['kg·m/s', 'kg·m/s²', 'kg·m²/s²', 'kg/s²'], a: 1 },
+    { q: 'エネルギーの単位 J（ジュール）を kg・m・s だけで表すとどれですか。',
+      c: ['kg·m/s²', 'kg·m²/s²', 'kg·m²/s³', 'kg/(m·s²)'], a: 1 },
+    { q: '圧力の単位 Pa（パスカル）を kg・m・s だけで表すとどれですか。', s: 'ヒント：圧力＝力÷面積',
+      c: ['kg/(m·s²)', 'kg·m/s²', 'kg/(m²·s²)', 'kg·m²/s²'], a: 0 },
+    { q: '次のうち、単位の上で成り立たない（次元が合わない）式はどれですか。',
+      s: 'v は速さ、a は加速度、t は時間、x は距離です。',
+      c: ['v = a t', 'x = v t', 'v = a t²', 'x = ½ a t²'], a: 2 },
+    { q: '次のうち、単位を持たない量（無次元量）はどれですか。',
+      c: ['速さ', '摩擦係数', '加速度', '力'], a: 1 },
+    { q: '電気量の単位 C（クーロン）は、電流 A と時間 s を使うとどう表せますか。',
+      c: ['A/s', 'A·s', 'A/s²', 'A²·s'], a: 1 },
+    { q: 'ばねの力は F = k x（F：力、x：伸び）と書けます。ばね定数 k の単位はどれですか。',
+      c: ['kg/s²', 'kg·m/s²', 'kg·m²/s²', 'kg/(m·s²)'], a: 0, t: true },
+    { q: '密度は「質量 ÷ 体積」です。密度の単位はどれですか。',
+      c: ['kg·m³', 'kg/m²', 'kg/m³', 'm³/kg'], a: 2, t: true }
+  ];
+  var LET = ['ア', 'イ', 'ウ', 'エ', 'オ'];
+  var TRANSFER = Q.map(function (q, i) { return q.t ? i : -1; }).filter(function (i) { return i >= 0; });
+
+  /* ---- 保存 ---- */
+  var S = load();
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY) || 'null') || fresh(); }
+    catch (e) { return fresh(); }
+  }
+  function fresh() { return { who: '', phase: 'top', i: 0, pre: [], post: [], reached: '', t0: 0 }; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+
+  /* ---- 画面切り替え ---- */
+  function show(id) {
+    ['s-top', 's-quiz', 's-play', 's-done', 's-agg'].forEach(function (x) {
+      $(x).classList.toggle('hidden', x !== id);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  /* ---- 採点 ---- */
+  function score(ans) {
+    var n = 0;
+    for (var i = 0; i < Q.length; i++) if (ans[i] === Q[i].a) n++;
+    return n;
+  }
+  function scoreT(ans) {
+    var n = 0;
+    TRANSFER.forEach(function (i) { if (ans[i] === Q[i].a) n++; });
+    return n;
+  }
+
+  /* ---- テスト画面 ---- */
+  function renderQuiz() {
+    var arr = S.phase === 'pre' ? S.pre : S.post;
+    var q = Q[S.i];
+    $('phase-label').textContent = (S.phase === 'pre' ? '事前テスト' : '事後テスト') +
+      '　問 ' + (S.i + 1) + ' / ' + Q.length;
+    var pg = '';
+    for (var k = 0; k < Q.length; k++) pg += '<i class="' + (arr[k] !== undefined && arr[k] !== null ? 'on' : '') + '"></i>';
+    $('prog').innerHTML = pg;
+    $('q-text').textContent = q.q;
+    $('q-sub').textContent = q.s || '';
+    $('q-sub').style.display = q.s ? '' : 'none';
+    var h = '';
+    for (var i = 0; i < q.c.length; i++) {
+      h += '<button class="ch' + (arr[S.i] === i ? ' sel' : '') + '" data-i="' + i + '">' +
+        '<b>' + LET[i] + '</b> <span class="mono">' + q.c[i] + '</span></button>';
+    }
+    h += '<button class="ch' + (arr[S.i] === -1 ? ' sel' : '') + '" data-i="-1"><b>？</b> わからない</button>';
+    $('q-choices').innerHTML = h;
+    Array.prototype.forEach.call($('q-choices').querySelectorAll('.ch'), function (b) {
+      b.onclick = function () {
+        arr[S.i] = +b.getAttribute('data-i');
+        save();
+        if (S.i < Q.length - 1) { S.i++; save(); renderQuiz(); }
+        else renderQuiz();
+      };
+    });
+    $('btn-prev').disabled = S.i === 0;
+    var answered = arr.filter(function (v) { return v !== undefined && v !== null; }).length;
+    $('btn-next').textContent = (S.i === Q.length - 1)
+      ? (answered === Q.length ? (S.phase === 'pre' ? 'ゲームへ →' : '結果を見る →') : 'あと ' + (Q.length - answered) + ' 問')
+      : 'つぎへ →';
+    $('btn-next').disabled = (S.i === Q.length - 1) && answered < Q.length;
+  }
+  $('btn-prev').onclick = function () { if (S.i > 0) { S.i--; save(); renderQuiz(); } };
+  $('btn-next').onclick = function () {
+    if (S.i < Q.length - 1) { S.i++; save(); renderQuiz(); return; }
+    if (S.phase === 'pre') { S.phase = 'play'; S.i = 0; save(); show('s-play'); }
+    else { S.phase = 'done'; save(); renderDone(); show('s-done'); }
+  };
+
+  /* ---- プレイ画面のタイマー ---- */
+  var tick = null;
+  function fmt(ms) {
+    if (ms < 0) ms = 0;
+    var s = Math.round(ms / 1000);
+    return ('0' + Math.floor(s / 60)).slice(-2) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+  function startTimer() {
+    if (!S.t0) { S.t0 = Date.now(); save(); }
+    clearInterval(tick);
+    tick = setInterval(paintTimer, 250);
+    paintTimer();
+  }
+  function paintTimer() {
+    var left = 20 * 60 * 1000 - (Date.now() - S.t0);
+    $('timer').textContent = fmt(left);
+    $('timer').classList.toggle('done', left <= 0);
+    $('btn-timer').textContent = left <= 0 ? '20分たちました' : 'タイマー動作中';
+    $('btn-timer').disabled = true;
+  }
+  $('btn-timer').onclick = startTimer;
+  $('btn-post').onclick = function () {
+    S.reached = $('reached').value.trim();
+    S.phase = 'post'; S.i = 0; save();
+    clearInterval(tick);
+    show('s-quiz'); renderQuiz();
+  };
+
+  /* ---- 結果 ---- */
+  function code() {
+    var who = (S.who || '??').replace(/[^0-9A-Za-zぁ-んァ-ヶ一-龠]/g, '').slice(0, 8) || '??';
+    return 'TM-' + who + '-' + score(S.pre) + '/' + score(S.post) +
+      '-' + scoreT(S.pre) + '/' + scoreT(S.post);
+  }
+  function renderDone() {
+    $('result-code').textContent = code();
+    var a = score(S.pre), b = score(S.post);
+    $('result-detail').innerHTML =
+      '10問中　事前 <b>' + a + '</b> 問 → 事後 <b>' + b + '</b> 問' +
+      (b > a ? '（<b>+' + (b - a) + '</b>）' : b === a ? '（変化なし）' : '') +
+      (S.reached ? '<br>20分で到達したステージ: ' + S.reached : '');
+  }
+  $('btn-copy').onclick = function () {
+    var t = code();
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, ng); else ng();
+    function ok() { $('btn-copy').textContent = 'コピーしました'; }
+    function ng() {
+      var r = document.createRange(); r.selectNodeContents($('result-code'));
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      $('btn-copy').textContent = '選択しました。長押しでコピーしてください';
+    }
+  };
+
+  /* ---- 集計 ---- */
+  $('btn-agg').onclick = function () { show('s-agg'); };
+  $('btn-back').onclick = function () { show('s-top'); };
+  $('btn-calc').onclick = function () {
+    var lines = $('agg-in').value.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var rows = [], bad = [];
+    lines.forEach(function (L) {
+      var m = L.match(/^TM-(.+?)-(\d+)\/(\d+)-(\d+)\/(\d+)$/);
+      if (!m) { bad.push(L); return; }
+      rows.push({ who: m[1], pre: +m[2], post: +m[3], preT: +m[4], postT: +m[5] });
+    });
+    if (!rows.length) { $('agg-out').innerHTML = '<div class="card">読み取れるコードがありませんでした。</div>'; return; }
+    var n = rows.length;
+    var sp = 0, sq = 0, tp = 0, tq = 0;
+    rows.forEach(function (r) { sp += r.pre; sq += r.post; tp += r.preT; tq += r.postT; });
+    var pre = sp / (n * Q.length) * 100, post = sq / (n * Q.length) * 100;
+    var preT = tp / (n * TRANSFER.length) * 100, postT = tq / (n * TRANSFER.length) * 100;
+    var r1 = function (x) { return Math.round(x); };
+    var tbl = '<table><tr><th>名前</th><th class="n">事前</th><th class="n">事後</th><th class="n">伸び</th><th class="n">問9・10</th></tr>';
+    rows.forEach(function (r) {
+      tbl += '<tr><td>' + r.who + '</td><td class="n">' + r.pre + '</td><td class="n">' + r.post +
+        '</td><td class="n">' + (r.post - r.pre >= 0 ? '+' : '') + (r.post - r.pre) + '</td><td class="n">' +
+        r.preT + ' → ' + r.postT + '</td></tr>';
+    });
+    tbl += '</table>';
+    var para = '【効果測定】\n' +
+      '◯年◯月、◯◯（学年）' + n + '名に対し、単位に関する10問のテストを実施 → 本作を20分プレイ → ' +
+      '同じ10問を再度実施、という手順で前後比較を行った。\n' +
+      '・全体の正答率　' + r1(pre) + '% → ' + r1(post) + '%（' + (post - pre >= 0 ? '+' : '') + r1(post - pre) + 'ポイント）\n' +
+      '・本作に登場しない量（ばね定数・密度）の次元を組み立てる2問　' + r1(preT) + '% → ' + r1(postT) + '%\n' +
+      '同一問題を用いているため再テスト効果を分離できないが、ゲーム中に一度も出てこない量についても' +
+      '正答率が上がったことは、個別の答えの記憶ではなく単位を組み立てる手続きが身についたことを示唆する。';
+    $('agg-out').innerHTML =
+      '<div class="card"><h2>集計結果（' + n + '名）</h2>' +
+      '<p>全体の正答率　<span class="big">' + r1(pre) + '% → ' + r1(post) + '%</span>' +
+      '（' + (post - pre >= 0 ? '+' : '') + r1(post - pre) + 'ポイント）</p>' +
+      '<p>問9・問10（ゲームに出てこない量）　<span class="big">' + r1(preT) + '% → ' + r1(postT) + '%</span></p>' +
+      tbl +
+      (bad.length ? '<div class="warn">読み取れなかった行が ' + bad.length + ' 件あります：<br>' +
+        bad.map(function (x) { return '<span class="mono">' + x.replace(/</g, '&lt;') + '</span>'; }).join('<br>') + '</div>' : '') +
+      '</div>' +
+      '<div class="card"><h2>作品概要に貼り付ける文章</h2>' +
+      '<p class="note">◯の部分だけ埋めて、作品概要の末尾に足してください。</p>' +
+      '<textarea id="para" readonly>' + para.replace(/</g, '&lt;') + '</textarea>' +
+      '<button class="btn" id="btn-copypara">この文章をコピー</button></div>';
+    var bp = $('btn-copypara');
+    if (bp) bp.onclick = function () {
+      $('para').select();
+      if (navigator.clipboard) navigator.clipboard.writeText(para);
+      bp.textContent = 'コピーしました';
+    };
+  };
+
+  /* ---- 開始 ---- */
+  $('btn-begin').onclick = function () {
+    var w = $('who').value.trim();
+    if (!w) { $('who').focus(); return; }
+    S = fresh(); S.who = w; S.phase = 'pre'; S.i = 0; save();
+    show('s-quiz'); renderQuiz();
+  };
+  $('btn-clear').onclick = function () { S = fresh(); save(); location.reload(); };
+  $('btn-resume').onclick = function () {
+    if (S.phase === 'pre' || S.phase === 'post') { show('s-quiz'); renderQuiz(); }
+    else if (S.phase === 'play') { show('s-play'); if (S.t0) startTimer(); }
+    else if (S.phase === 'done') { renderDone(); show('s-done'); }
+  };
+
+  if (S.phase && S.phase !== 'top') {
+    $('resume').classList.remove('hidden');
+    $('resume-note').textContent = S.who + ' さんの' +
+      (S.phase === 'pre' ? '事前テスト' : S.phase === 'play' ? 'ゲームのところ' :
+       S.phase === 'post' ? '事後テスト' : '結果') + 'の途中です。';
+  }
+  show('s-top');
+})();
+</script>
+</body>
+</html>
