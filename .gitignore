@@ -5,3 +5,4 @@ shot-*.png
 demo/
 docs/*.pdf
 docs/*.zip
+docs/*.local.txt

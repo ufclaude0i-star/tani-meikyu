@@ -5,7 +5,11 @@
 
 ## 動かし方
 
-`dist/index.html` をダブルクリックするだけ。
+**いちばん簡単：** ブラウザで https://ufclaude0i-star.github.io/tani-meikyu/ を開くだけ。
+
+**ファイルから：** このフォルダの**直下にある `index.html`** をダブルクリックするだけ。
+（`test/index.html` は効果測定用の別ページで、作品本体ではありません。
+　`dist/` フォルダは開発用のビルド出力で、提出物には含まれていません。）
 インストール・ビルド・ネット接続はすべて不要です。
 Windows / macOS / Linux の各ブラウザ、iPhone / iPad / Android のブラウザで動きます。
 
